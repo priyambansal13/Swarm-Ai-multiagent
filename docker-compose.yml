@@ -1,0 +1,57 @@
+services:
+  postgres:
+    image: pgvector/pgvector:pg17
+    container_name: swarm-db
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-swarm}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-swarm}
+      POSTGRES_DB: postgres
+    ports:
+      - "${POSTGRES_PORT:-5434}:5432"
+    volumes:
+      - swarm_pg:/var/lib/postgresql/data
+      - ./infra/init-db.sql:/docker-entrypoint-initdb.d/init-db.sql:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER}"]
+      interval: 5s
+      retries: 10
+
+  n8n:
+    image: n8nio/n8n:${N8N_VERSION:-2.43.7}
+    container_name: swarm-n8n
+    depends_on:
+      postgres:
+        condition: service_healthy
+    ports:
+      - "${N8N_PORT:-5678}:5678"
+    environment:
+      DB_TYPE: postgresdb
+      DB_POSTGRESDB_HOST: postgres
+      DB_POSTGRESDB_DATABASE: n8n
+      DB_POSTGRESDB_USER: ${POSTGRES_USER:-swarm}
+      DB_POSTGRESDB_PASSWORD: ${POSTGRES_PASSWORD:-swarm}
+      N8N_ENCRYPTION_KEY: ${N8N_ENCRYPTION_KEY:-change-me-to-a-long-random-string}
+      GENERIC_TIMEZONE: ${TIMEZONE:-Asia/Kolkata}
+      TZ: ${TIMEZONE:-Asia/Kolkata}
+      # Public HTTPS URL (tunnel / domain) — required for Telegram & WhatsApp webhooks
+      N8N_WEBHOOK_URL: ${N8N_PUBLIC_URL:-http://localhost:5678/}
+      WEBHOOK_URL: ${N8N_PUBLIC_URL:-http://localhost:5678/}
+      # Trust one reverse proxy (Cloudflare tunnel / ngrok) for X-Forwarded-For
+      N8N_PROXY_HOPS: "1"
+      N8N_LOG_LEVEL: ${N8N_LOG_LEVEL:-info}
+      N8N_SECURE_COOKIE: "false"
+      # Values the workflows read with $env.*
+      N8N_BLOCK_ENV_ACCESS_IN_NODE: "false"
+      SWARM_BRAIN_URL: ${SWARM_BRAIN_URL:-http://host.docker.internal:4200}
+      SWARM_N8N_TOKEN: ${SWARM_N8N_TOKEN:-dev-n8n-shared-secret}
+      WHATSAPP_PHONE_NUMBER_ID: ${WHATSAPP_PHONE_NUMBER_ID:-}
+      SWARM_ADMIN_TELEGRAM_CHAT_ID: ${SWARM_ADMIN_TELEGRAM_CHAT_ID:-}
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    volumes:
+      - swarm_n8n:/home/node/.n8n
+      - ./n8n/workflows:/workflows:ro
+
+volumes:
+  swarm_pg:
+  swarm_n8n:

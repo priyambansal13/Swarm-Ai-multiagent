@@ -1,0 +1,314 @@
+{
+  "id": "SwarmScheduler01",
+  "name": "SwarmAI – Scheduler (reminders, briefs, alerts)",
+  "active": false,
+  "isArchived": false,
+  "nodes": [
+    {
+      "id": "07fd458a-10e4-4c56-8527-672667f4d0f5",
+      "name": "Every minute",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2,
+      "position": [
+        240,
+        300
+      ],
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "minutes",
+              "minutesInterval": 1
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "cc33b099-1e0e-4cc9-b6c0-eb1e704a8f95",
+      "name": "Tick brain",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        480,
+        300
+      ],
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $env.SWARM_BRAIN_URL }}/api/automations/tick",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "X-Swarm-Key",
+              "value": "={{ $env.SWARM_N8N_TOKEN }}"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({}) }}",
+        "options": {
+          "timeout": 60000
+        }
+      }
+    },
+    {
+      "id": "69f90918-1765-4de3-8bdb-e64833deba38",
+      "name": "One item per message",
+      "type": "n8n-nodes-base.splitOut",
+      "typeVersion": 1,
+      "position": [
+        720,
+        300
+      ],
+      "parameters": {
+        "fieldToSplitOut": "deliveries",
+        "options": {}
+      }
+    },
+    {
+      "id": "fb357701-6388-4b03-bacd-75ff25209d8d",
+      "name": "Telegram?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        960,
+        300
+      ],
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "loose",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "ac372e61-ec19-426d-827a-fe28700c7f4f",
+              "leftValue": "={{ $json.channel }}",
+              "rightValue": "telegram",
+              "operator": {
+                "type": "string",
+                "operation": "equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      }
+    },
+    {
+      "id": "03a84172-a43a-49b6-b733-1da3d6599bd3",
+      "name": "Send on Telegram",
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        1200,
+        300
+      ],
+      "parameters": {
+        "resource": "message",
+        "operation": "sendMessage",
+        "chatId": "={{ $json.chatId }}",
+        "text": "={{ $json.text }}",
+        "additionalFields": {
+          "appendAttribution": false,
+          "disable_web_page_preview": true
+        }
+      },
+      "credentials": {
+        "telegramApi": {
+          "id": "SwarmCredTelegram",
+          "name": "SwarmAI Telegram bot"
+        }
+      },
+      "onError": "continueErrorOutput"
+    },
+    {
+      "id": "10c99ff8-fd37-4612-ac3a-eeb4f4db47af",
+      "name": "Send on WhatsApp",
+      "type": "n8n-nodes-base.whatsApp",
+      "typeVersion": 1.1,
+      "position": [
+        1440,
+        300
+      ],
+      "parameters": {
+        "resource": "message",
+        "operation": "send",
+        "phoneNumberId": "={{ $env.WHATSAPP_PHONE_NUMBER_ID }}",
+        "recipientPhoneNumber": "={{ $json.chatId }}",
+        "messageType": "text",
+        "textBody": "={{ $json.text }}",
+        "additionalFields": {}
+      },
+      "credentials": {
+        "whatsAppApi": {
+          "id": "SwarmCredWhatsApp",
+          "name": "SwarmAI WhatsApp Cloud API"
+        }
+      },
+      "onError": "continueErrorOutput"
+    },
+    {
+      "id": "68f8b579-8512-45b6-8e86-52320054bf7f",
+      "name": "Ack delivered",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        1680,
+        300
+      ],
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $env.SWARM_BRAIN_URL }}/api/automations/ack",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "X-Swarm-Key",
+              "value": "={{ $env.SWARM_N8N_TOKEN }}"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ sent: [$('One item per message').item.json.id] }) }}",
+        "options": {
+          "timeout": 30000
+        }
+      }
+    },
+    {
+      "id": "02bc213b-f85b-437a-bc00-70129fd2874e",
+      "name": "Ack failed",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        1920,
+        300
+      ],
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $env.SWARM_BRAIN_URL }}/api/automations/ack",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "X-Swarm-Key",
+              "value": "={{ $env.SWARM_N8N_TOKEN }}"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ failed: [{ id: $('One item per message').item.json.id, error: String($json.error?.message ?? $json.error ?? 'send failed').slice(0, 300) }] }) }}",
+        "options": {
+          "timeout": 30000
+        }
+      }
+    }
+  ],
+  "connections": {
+    "Every minute": {
+      "main": [
+        [
+          {
+            "node": "Tick brain",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Tick brain": {
+      "main": [
+        [
+          {
+            "node": "One item per message",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "One item per message": {
+      "main": [
+        [
+          {
+            "node": "Telegram?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Telegram?": {
+      "main": [
+        [
+          {
+            "node": "Send on Telegram",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Send on WhatsApp",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Send on Telegram": {
+      "main": [
+        [
+          {
+            "node": "Ack delivered",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Ack failed",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Send on WhatsApp": {
+      "main": [
+        [
+          {
+            "node": "Ack delivered",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Ack failed",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1",
+    "timezone": "Asia/Kolkata",
+    "errorWorkflow": "SwarmErrors00001"
+  },
+  "pinData": {},
+  "meta": {
+    "templateCredsSetupCompleted": false
+  },
+  "tags": []
+}

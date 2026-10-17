@@ -1,0 +1,366 @@
+{
+  "id": "SwarmTelegram001",
+  "name": "SwarmAI – Telegram channel",
+  "active": false,
+  "isArchived": false,
+  "nodes": [
+    {
+      "id": "c3b46b89-2fa1-4723-829c-b3aa29b290b0",
+      "name": "Telegram Trigger",
+      "type": "n8n-nodes-base.telegramTrigger",
+      "typeVersion": 1.2,
+      "position": [
+        240,
+        300
+      ],
+      "parameters": {
+        "updates": [
+          "message"
+        ],
+        "additionalFields": {
+          "download": true
+        }
+      },
+      "credentials": {
+        "telegramApi": {
+          "id": "SwarmCredTelegram",
+          "name": "SwarmAI Telegram bot"
+        }
+      },
+      "webhookId": "ac7f9508-6919-458a-bf0b-5c1703d66965"
+    },
+    {
+      "id": "68ad534c-ad58-4e91-b3d9-92b29d4b3555",
+      "name": "Has attachment?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        480,
+        300
+      ],
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "loose",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "5b67234d-4096-4d21-80b2-92c6d4e2f4ab",
+              "leftValue": "={{ $binary.data ? 'yes' : '' }}",
+              "rightValue": "",
+              "operator": {
+                "type": "string",
+                "operation": "notEmpty",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      }
+    },
+    {
+      "id": "f41153bd-f261-4826-85d5-31fe42f9b701",
+      "name": "Attachment → base64",
+      "type": "n8n-nodes-base.extractFromFile",
+      "typeVersion": 1.1,
+      "position": [
+        720,
+        300
+      ],
+      "parameters": {
+        "operation": "binaryToPropery",
+        "binaryPropertyName": "data",
+        "destinationKey": "data",
+        "options": {}
+      }
+    },
+    {
+      "id": "be082429-28f1-4b6c-afbb-5a566c7ca9d6",
+      "name": "Build brain request",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        960,
+        300
+      ],
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "// Normalise a Telegram update into the brain's inbound format.\nconst m = $('Telegram Trigger').item.json.message ?? {};\nconst bin = $('Telegram Trigger').item.binary?.data;\nconst body = {\n  channel: 'telegram',\n  externalId: String(m.chat?.id ?? ''),\n  displayName: [m.from?.first_name, m.from?.last_name].filter(Boolean).join(' ') || m.from?.username || null,\n  messageId: String(m.message_id ?? ''),\n  text: m.text ?? m.caption ?? null,\n};\nif ($json.data && bin) {\n  const media = { data: $json.data, mime: bin.mimeType || 'application/octet-stream', name: bin.fileName || 'file' };\n  if (m.voice || m.audio) body.audio = { ...media, mime: m.voice ? 'audio/ogg' : (m.audio?.mime_type || media.mime) };\n  else if (m.photo) body.image = { ...media, mime: media.mime.startsWith('image/') ? media.mime : 'image/jpeg' };\n  else if (m.document) body.document = { ...media, mime: m.document.mime_type || media.mime, name: m.document.file_name || media.name };\n}\nreturn { json: { chatId: body.externalId, body } };"
+      }
+    },
+    {
+      "id": "32c7492b-83fb-473f-9a2b-44dacccdc3e1",
+      "name": "Ask SwarmAI brain",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        1200,
+        300
+      ],
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $env.SWARM_BRAIN_URL }}/api/channels/inbound",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "X-Swarm-Key",
+              "value": "={{ $env.SWARM_N8N_TOKEN }}"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify($json.body) }}",
+        "options": {
+          "timeout": 300000
+        }
+      }
+    },
+    {
+      "id": "f7dea719-0125-460f-8900-3a27349ef775",
+      "name": "Send reply",
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        1440,
+        300
+      ],
+      "parameters": {
+        "resource": "message",
+        "operation": "sendMessage",
+        "chatId": "={{ $('Build brain request').item.json.chatId }}",
+        "text": "={{ $json.reply }}",
+        "additionalFields": {
+          "appendAttribution": false,
+          "disable_web_page_preview": true
+        }
+      },
+      "credentials": {
+        "telegramApi": {
+          "id": "SwarmCredTelegram",
+          "name": "SwarmAI Telegram bot"
+        }
+      }
+    },
+    {
+      "id": "5cb0db6f-5b98-47d2-80ae-e46aa823ddc6",
+      "name": "Voice reply?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        1680,
+        300
+      ],
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "loose",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "029cb1bf-e390-4765-a68a-8b896fcebc1d",
+              "leftValue": "={{ $('Ask SwarmAI brain').item.json.voice }}",
+              "rightValue": "",
+              "operator": {
+                "type": "string",
+                "operation": "notEmpty",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      }
+    },
+    {
+      "id": "a83fce6d-d1e3-4e53-a68d-430fa07bf55f",
+      "name": "Pick voice",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        2160,
+        300
+      ],
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "return { json: { voice: $('Ask SwarmAI brain').item.json.voice } };"
+      }
+    },
+    {
+      "id": "367b86ea-aaac-497c-be9d-751ffa182375",
+      "name": "Voice reply → MP3",
+      "type": "n8n-nodes-base.convertToFile",
+      "typeVersion": 1.1,
+      "position": [
+        1920,
+        300
+      ],
+      "parameters": {
+        "operation": "toBinary",
+        "sourceProperty": "voice",
+        "binaryPropertyName": "data",
+        "options": {
+          "dataIsBase64": true,
+          "fileName": "swarmai-reply.mp3",
+          "mimeType": "audio/mpeg"
+        }
+      }
+    },
+    {
+      "id": "5d645d23-82e7-4c11-9b1c-966834b19007",
+      "name": "Send voice reply",
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        2400,
+        300
+      ],
+      "parameters": {
+        "resource": "message",
+        "operation": "sendAudio",
+        "binaryData": true,
+        "binaryPropertyName": "data",
+        "chatId": "={{ $('Build brain request').item.json.chatId }}",
+        "additionalFields": {
+          "appendAttribution": false,
+          "title": "SwarmAI",
+          "performer": "SwarmAI"
+        }
+      },
+      "credentials": {
+        "telegramApi": {
+          "id": "SwarmCredTelegram",
+          "name": "SwarmAI Telegram bot"
+        }
+      }
+    }
+  ],
+  "connections": {
+    "Telegram Trigger": {
+      "main": [
+        [
+          {
+            "node": "Has attachment?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Has attachment?": {
+      "main": [
+        [
+          {
+            "node": "Attachment → base64",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Build brain request",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Attachment → base64": {
+      "main": [
+        [
+          {
+            "node": "Build brain request",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Build brain request": {
+      "main": [
+        [
+          {
+            "node": "Ask SwarmAI brain",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Ask SwarmAI brain": {
+      "main": [
+        [
+          {
+            "node": "Send reply",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Send reply": {
+      "main": [
+        [
+          {
+            "node": "Voice reply?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Voice reply?": {
+      "main": [
+        [
+          {
+            "node": "Pick voice",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Pick voice": {
+      "main": [
+        [
+          {
+            "node": "Voice reply → MP3",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Voice reply → MP3": {
+      "main": [
+        [
+          {
+            "node": "Send voice reply",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1",
+    "timezone": "Asia/Kolkata",
+    "errorWorkflow": "SwarmErrors00001"
+  },
+  "pinData": {},
+  "meta": {
+    "templateCredsSetupCompleted": false
+  },
+  "tags": []
+}

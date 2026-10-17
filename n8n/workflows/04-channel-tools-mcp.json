@@ -1,0 +1,117 @@
+{
+  "id": "SwarmMcpTools001",
+  "name": "SwarmAI – Channel tools (MCP server)",
+  "active": false,
+  "isArchived": false,
+  "nodes": [
+    {
+      "id": "c6065a13-0149-4764-b7f7-fd0098a09766",
+      "name": "MCP Server Trigger",
+      "type": "@n8n/n8n-nodes-langchain.mcpTrigger",
+      "typeVersion": 2,
+      "position": [
+        240,
+        300
+      ],
+      "parameters": {
+        "authentication": "bearerAuth",
+        "path": "swarm-channels"
+      },
+      "credentials": {
+        "httpBearerAuth": {
+          "id": "SwarmCredMcpBearer",
+          "name": "SwarmAI MCP bearer token"
+        }
+      },
+      "webhookId": "swarm-channels"
+    },
+    {
+      "id": "edc2333b-54c7-4d7b-9f42-662136e950e8",
+      "name": "send_telegram_message",
+      "type": "n8n-nodes-base.telegramTool",
+      "typeVersion": 1.2,
+      "position": [
+        480,
+        500
+      ],
+      "parameters": {
+        "descriptionType": "manual",
+        "toolDescription": "Send a Telegram message to the given chat id (the user's linked Telegram chat).",
+        "resource": "message",
+        "operation": "sendMessage",
+        "chatId": "={{ $fromAI('chatId', 'Telegram chat id', 'string') }}",
+        "text": "={{ $fromAI('text', 'Message text', 'string') }}",
+        "additionalFields": {
+          "appendAttribution": false
+        }
+      },
+      "credentials": {
+        "telegramApi": {
+          "id": "SwarmCredTelegram",
+          "name": "SwarmAI Telegram bot"
+        }
+      }
+    },
+    {
+      "id": "956b8436-6503-40bc-b650-b42ecce01e16",
+      "name": "send_whatsapp_message",
+      "type": "n8n-nodes-base.whatsAppTool",
+      "typeVersion": 1.1,
+      "position": [
+        720,
+        500
+      ],
+      "parameters": {
+        "descriptionType": "manual",
+        "toolDescription": "Send a WhatsApp text to the given phone number (the user's linked WhatsApp, international format without +).",
+        "resource": "message",
+        "operation": "send",
+        "phoneNumberId": "={{ $env.WHATSAPP_PHONE_NUMBER_ID }}",
+        "recipientPhoneNumber": "={{ $fromAI('chatId', 'WhatsApp phone number', 'string') }}",
+        "messageType": "text",
+        "textBody": "={{ $fromAI('text', 'Message text', 'string') }}",
+        "additionalFields": {}
+      },
+      "credentials": {
+        "whatsAppApi": {
+          "id": "SwarmCredWhatsApp",
+          "name": "SwarmAI WhatsApp Cloud API"
+        }
+      }
+    }
+  ],
+  "connections": {
+    "send_telegram_message": {
+      "ai_tool": [
+        [
+          {
+            "node": "MCP Server Trigger",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "send_whatsapp_message": {
+      "ai_tool": [
+        [
+          {
+            "node": "MCP Server Trigger",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1",
+    "timezone": "Asia/Kolkata",
+    "errorWorkflow": "SwarmErrors00001"
+  },
+  "pinData": {},
+  "meta": {
+    "templateCredsSetupCompleted": false
+  },
+  "tags": []
+}

@@ -1,0 +1,459 @@
+{
+  "id": "SwarmWhatsApp001",
+  "name": "SwarmAI – WhatsApp channel",
+  "active": false,
+  "isArchived": false,
+  "nodes": [
+    {
+      "id": "fff5efc4-d545-46ca-b368-6a28eb21a006",
+      "name": "WhatsApp Trigger",
+      "type": "n8n-nodes-base.whatsAppTrigger",
+      "typeVersion": 1,
+      "position": [
+        240,
+        300
+      ],
+      "parameters": {
+        "updates": [
+          "messages"
+        ],
+        "options": {}
+      },
+      "credentials": {
+        "whatsAppTriggerApi": {
+          "id": "SwarmCredWaTrigger",
+          "name": "SwarmAI WhatsApp webhook (Meta app)"
+        }
+      },
+      "webhookId": "23eeb545-94d8-4604-9475-b07ee988903d"
+    },
+    {
+      "id": "c995167f-caa2-469b-9a32-36a70efb2926",
+      "name": "Parse messages",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        480,
+        300
+      ],
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "// One item per incoming user message (status updates are ignored).\nconst out = [];\nfor (const item of $input.all()) {\n  const v = item.json;\n  const val = v.entry?.[0]?.changes?.[0]?.value ?? v;\n  const name = val.contacts?.[0]?.profile?.name ?? null;\n  for (const msg of val.messages ?? []) {\n    const media = msg.audio ?? msg.voice ?? msg.image ?? msg.document ?? null;\n    const kind = msg.audio || msg.voice ? 'audio' : msg.image ? 'image' : msg.document ? 'document' : null;\n    out.push({ json: {\n      phone: msg.from,\n      body: { channel: 'whatsapp', externalId: msg.from, displayName: name, messageId: msg.id,\n              text: msg.text?.body ?? msg.image?.caption ?? msg.document?.caption ?? msg.button?.text ?? msg.interactive?.button_reply?.title ?? null },\n      mediaId: media?.id ?? '', mediaKind: kind, mediaMime: media?.mime_type ?? null, mediaName: msg.document?.filename ?? kind,\n    } });\n  }\n}\nreturn out;"
+      }
+    },
+    {
+      "id": "5dd0d05e-44ed-4186-876d-0276141f8c5d",
+      "name": "Has media?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        720,
+        300
+      ],
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "loose",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "de98110e-5201-468f-b183-a83520b65fd4",
+              "leftValue": "={{ $json.mediaId }}",
+              "rightValue": "",
+              "operator": {
+                "type": "string",
+                "operation": "notEmpty",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      }
+    },
+    {
+      "id": "97cd8200-eb31-4ccb-988e-04de3c0159a2",
+      "name": "Get media URL",
+      "type": "n8n-nodes-base.whatsApp",
+      "typeVersion": 1.1,
+      "position": [
+        960,
+        300
+      ],
+      "parameters": {
+        "resource": "media",
+        "operation": "mediaUrlGet",
+        "mediaGetId": "={{ $json.mediaId }}"
+      },
+      "credentials": {
+        "whatsAppApi": {
+          "id": "SwarmCredWhatsApp",
+          "name": "SwarmAI WhatsApp Cloud API"
+        }
+      }
+    },
+    {
+      "id": "fa50d248-5324-45b8-8adf-59bf62ede54a",
+      "name": "Download media",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        1200,
+        300
+      ],
+      "parameters": {
+        "method": "GET",
+        "url": "={{ $json.url }}",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "whatsAppApi",
+        "options": {
+          "response": {
+            "response": {
+              "responseFormat": "file"
+            }
+          },
+          "timeout": 60000
+        }
+      },
+      "credentials": {
+        "whatsAppApi": {
+          "id": "SwarmCredWhatsApp",
+          "name": "SwarmAI WhatsApp Cloud API"
+        }
+      }
+    },
+    {
+      "id": "94f057a1-3ed0-4aff-839c-58def927ed3b",
+      "name": "Media → base64",
+      "type": "n8n-nodes-base.extractFromFile",
+      "typeVersion": 1.1,
+      "position": [
+        1440,
+        300
+      ],
+      "parameters": {
+        "operation": "binaryToPropery",
+        "binaryPropertyName": "data",
+        "destinationKey": "data",
+        "options": {}
+      }
+    },
+    {
+      "id": "45f12604-783d-4802-82b7-c7fe74e452d5",
+      "name": "Build brain request",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1680,
+        300
+      ],
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "const p = $('Parse messages').item.json;\nconst body = { ...p.body };\nif ($json.data && p.mediaKind) body[p.mediaKind] = { data: $json.data, mime: p.mediaMime || 'application/octet-stream', name: p.mediaName || 'file' };\nreturn { json: { phone: p.phone, body } };"
+      }
+    },
+    {
+      "id": "a545edcd-71e9-4a7e-b74d-b34ccdb45c49",
+      "name": "Ask SwarmAI brain",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        1920,
+        300
+      ],
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $env.SWARM_BRAIN_URL }}/api/channels/inbound",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "X-Swarm-Key",
+              "value": "={{ $env.SWARM_N8N_TOKEN }}"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify($json.body) }}",
+        "options": {
+          "timeout": 300000
+        }
+      }
+    },
+    {
+      "id": "04a7cb79-bc2a-4d84-96b2-1e68c8385bc8",
+      "name": "Send reply",
+      "type": "n8n-nodes-base.whatsApp",
+      "typeVersion": 1.1,
+      "position": [
+        2160,
+        300
+      ],
+      "parameters": {
+        "resource": "message",
+        "operation": "send",
+        "phoneNumberId": "={{ $env.WHATSAPP_PHONE_NUMBER_ID }}",
+        "recipientPhoneNumber": "={{ $('Build brain request').item.json.phone }}",
+        "messageType": "text",
+        "textBody": "={{ $json.reply }}",
+        "additionalFields": {}
+      },
+      "credentials": {
+        "whatsAppApi": {
+          "id": "SwarmCredWhatsApp",
+          "name": "SwarmAI WhatsApp Cloud API"
+        }
+      }
+    },
+    {
+      "id": "6b38d7c2-9e1f-480a-95aa-6ca965552936",
+      "name": "Voice reply?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        2400,
+        300
+      ],
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "loose",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "ba72ba01-7f8c-4110-9b48-c26a4bd06935",
+              "leftValue": "={{ $('Ask SwarmAI brain').item.json.voice }}",
+              "rightValue": "",
+              "operator": {
+                "type": "string",
+                "operation": "notEmpty",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      }
+    },
+    {
+      "id": "e8e3a8b4-eccb-4291-94fe-637995d211d1",
+      "name": "Pick voice",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        2640,
+        300
+      ],
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "return { json: { voice: $('Ask SwarmAI brain').item.json.voice } };"
+      }
+    },
+    {
+      "id": "bfd5b668-e85c-4043-8522-b7d11acac8b0",
+      "name": "Voice reply → MP3",
+      "type": "n8n-nodes-base.convertToFile",
+      "typeVersion": 1.1,
+      "position": [
+        2880,
+        300
+      ],
+      "parameters": {
+        "operation": "toBinary",
+        "sourceProperty": "voice",
+        "binaryPropertyName": "data",
+        "options": {
+          "dataIsBase64": true,
+          "fileName": "swarmai-reply.mp3",
+          "mimeType": "audio/mpeg"
+        }
+      }
+    },
+    {
+      "id": "18ab14d3-bfc2-4c2c-88b0-da607df920cb",
+      "name": "Send voice reply",
+      "type": "n8n-nodes-base.whatsApp",
+      "typeVersion": 1.1,
+      "position": [
+        3120,
+        300
+      ],
+      "parameters": {
+        "resource": "message",
+        "operation": "send",
+        "phoneNumberId": "={{ $env.WHATSAPP_PHONE_NUMBER_ID }}",
+        "recipientPhoneNumber": "={{ $('Build brain request').item.json.phone }}",
+        "messageType": "audio",
+        "mediaPath": "useMedian8n",
+        "mediaPropertyName": "data",
+        "additionalFields": {}
+      },
+      "credentials": {
+        "whatsAppApi": {
+          "id": "SwarmCredWhatsApp",
+          "name": "SwarmAI WhatsApp Cloud API"
+        }
+      }
+    }
+  ],
+  "connections": {
+    "WhatsApp Trigger": {
+      "main": [
+        [
+          {
+            "node": "Parse messages",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Parse messages": {
+      "main": [
+        [
+          {
+            "node": "Has media?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Has media?": {
+      "main": [
+        [
+          {
+            "node": "Get media URL",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Build brain request",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get media URL": {
+      "main": [
+        [
+          {
+            "node": "Download media",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Download media": {
+      "main": [
+        [
+          {
+            "node": "Media → base64",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Media → base64": {
+      "main": [
+        [
+          {
+            "node": "Build brain request",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Build brain request": {
+      "main": [
+        [
+          {
+            "node": "Ask SwarmAI brain",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Ask SwarmAI brain": {
+      "main": [
+        [
+          {
+            "node": "Send reply",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Send reply": {
+      "main": [
+        [
+          {
+            "node": "Voice reply?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Voice reply?": {
+      "main": [
+        [
+          {
+            "node": "Pick voice",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Pick voice": {
+      "main": [
+        [
+          {
+            "node": "Voice reply → MP3",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Voice reply → MP3": {
+      "main": [
+        [
+          {
+            "node": "Send voice reply",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1",
+    "timezone": "Asia/Kolkata",
+    "errorWorkflow": "SwarmErrors00001"
+  },
+  "pinData": {},
+  "meta": {
+    "templateCredsSetupCompleted": false
+  },
+  "tags": []
+}

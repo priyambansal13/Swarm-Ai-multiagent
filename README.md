@@ -74,7 +74,7 @@ Flags: `--yes` (non-interactive: keep existing values, read new ones from enviro
 `OPENAI_API_KEY`), `--tunnel`, `--no-build`, `--no-start`.
 
 Then open **http://localhost:3200**, sign up, and use **Settings** to connect Google and link Telegram/WhatsApp.
-Where to get each key: **[docs/SETUP-INTEGRATIONS.md](docs/SETUP-INTEGRATIONS.md)**. What you can ask it: **[docs/USER-GUIDE.md](docs/USER-GUIDE.md)**.
+Where to get each key: **[docs/SETUP-INTEGRATIONS.md](docs/SETUP-INTEGRATIONS.md)**. What you can ask it: **[docs/USER-GUIDE.md](docs/USER-GUIDE.md)**. Flow diagrams and every library explained: **[docs/ARCHITECTURE.md](docs/ARCHITECTURE.md)**.
 
 <details><summary>Manual setup (without the script)</summary>
 
@@ -106,6 +106,9 @@ cd .. && node scripts/swarm.mjs n8n
 ---
 
 ## 3. Architecture
+
+Detailed flows (web chat, phone messages, agent graph, scheduler, Google connect, setup) and a library-by-library
+explanation: **[docs/ARCHITECTURE.md](docs/ARCHITECTURE.md)**.
 
 ```mermaid
 flowchart LR

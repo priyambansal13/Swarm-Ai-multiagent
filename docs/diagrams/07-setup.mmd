@@ -1,0 +1,15 @@
+flowchart TB
+  L["<b>setup.sh</b> (Mac / Linux)<br/><b>setup.cmd</b> (Windows)"] --> S1
+  S1["1️⃣ Check tools<br/>Node · pnpm · Docker"] --> S2
+  S2["2️⃣ Ask for keys<br/>and test each one"] --> S3
+  S3["3️⃣ Start database & n8n<br/>in Docker"] --> S4
+  S4["4️⃣ Install & build<br/>brain and web app"] --> S5
+  S5["5️⃣ Load n8n workflows<br/>and register webhooks"] --> S6
+  S6["6️⃣ Start brain & web app<br/>in the background"] --> S7
+  S7["7️⃣ Show status"]
+  T["☁️ setup.sh tunnel<br/>public address for phones"] -.-> S5
+
+  classDef step fill:#DBEAFE,stroke:#2563EB,color:#111;
+  classDef side fill:#FFEDD5,stroke:#EA580C,color:#111;
+  class S1,S2,S3,S4,S5,S6,S7 step;
+  class L,T side;

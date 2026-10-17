@@ -29,6 +29,10 @@ SwarmAI has three running parts plus a database:
 | **n8n** ("hands") | n8n workflows (:5678) | Telegram & WhatsApp in/out, the every-minute scheduler, error alerts, MCP "send" tools |
 | **Database** | PostgreSQL 17 + pgvector (:5434) | users, conversations, agent checkpoints, tasks/expenses/notes, embeddings, outbox |
 
+![SwarmAI overview](diagrams/01-overview.png)
+
+<details><summary>Technical version (Mermaid)</summary>
+
 ```mermaid
 flowchart LR
   subgraph Clients
@@ -92,6 +96,8 @@ flowchart LR
   N8N <-->|own database 'n8n'| DB
 ```
 
+</details>
+
 **Rule of thumb:** the brain *decides*, n8n *delivers*. n8n never calls an LLM and never holds a user's Google
 credentials; the brain never talks to Telegram/WhatsApp directly (it asks n8n through MCP or the outbox).
 
@@ -100,6 +106,10 @@ credentials; the brain never talks to Telegram/WhatsApp directly (it asks n8n th
 ## 2. Flow: a chat in the web app (with approval)
 
 Example: *"Email Rahul that I'll send the deck Friday, and what's the weather in Pune tomorrow?"*
+
+![Web chat with approval](diagrams/02-web-chat.png)
+
+<details><summary>Technical version (Mermaid)</summary>
 
 ```mermaid
 sequenceDiagram
@@ -144,6 +154,8 @@ sequenceDiagram
   A-->>W: TEXT_MESSAGE "Sent ✅" · RUN_FINISHED "success"
 ```
 
+</details>
+
 Key points
 - **Nothing with side effects runs before approval.** Tools like `gmail_send` only call `propose()`; the real API call
   happens in `ActionExecutor` after the user approves.
@@ -156,6 +168,10 @@ Key points
 ## 3. Flow: a Telegram / WhatsApp message
 
 Example: a **voice note** *"remind me at 9 pm to call mom"*.
+
+![Telegram / WhatsApp message](diagrams/03-phone-message.png)
+
+<details><summary>Technical version (Mermaid)</summary>
 
 ```mermaid
 sequenceDiagram
@@ -192,6 +208,8 @@ sequenceDiagram
   P->>U: reply (text + voice)
 ```
 
+</details>
+
 - One conversation thread per user per channel (`telegram-<userId>`, `whatsapp-<userId>`), so context carries over.
 - Approvals by text: `YES`, `ok`, `haan`, `👍` … / `NO`, `cancel`, `nahi`, `👎` … (regex in `channels.service.ts`).
 - Meta's webhook is verified by n8n (GET challenge) and every POST is checked with the app secret (HMAC signature).
@@ -199,6 +217,10 @@ sequenceDiagram
 ---
 
 ## 4. Inside the brain: the LangGraph agent graph
+
+![Agent graph](diagrams/04-agent-graph.png)
+
+<details><summary>Technical version (Mermaid)</summary>
 
 ```mermaid
 flowchart TD
@@ -230,6 +252,8 @@ flowchart TD
   classDef g fill:#e8f0fe,stroke:#4285f4
 ```
 
+</details>
+
 - **Agents as tools:** each specialist is wrapped as a LangChain `tool()` (`ask_email_agent`, …) with a Zod schema, so
   the master model decides which to call and can call several in one turn — they run concurrently.
 - **Specialist loop** (`agents/specialist.ts`): model → tool calls → results → model, up to 6 steps, streaming tool
@@ -242,6 +266,10 @@ flowchart TD
 ---
 
 ## 5. Flow: scheduler, reminders and proactive messages
+
+![Scheduler and outbox](diagrams/05-scheduler.png)
+
+<details><summary>Technical version (Mermaid)</summary>
 
 ```mermaid
 sequenceDiagram
@@ -267,6 +295,8 @@ sequenceDiagram
   B->>DB: outbox status sent / failed
 ```
 
+</details>
+
 The **outbox pattern** means a message is never lost or sent twice silently: it is stored first, handed to n8n,
 and marked `sent`/`failed` only after n8n reports back. If any workflow fails, n8n's **Error handler** workflow
 messages the admin Telegram chat.
@@ -279,6 +309,10 @@ the brain from your linked chat — the model cannot choose who receives a messa
 ---
 
 ## 6. Flow: connecting Google
+
+![Connecting Google](diagrams/06-google-connect.png)
+
+<details><summary>Technical version (Mermaid)</summary>
 
 ```mermaid
 sequenceDiagram
@@ -300,9 +334,15 @@ sequenceDiagram
   B-->>W: redirect /settings?google=connected (or =partial&detail=… if a permission/API is missing)
 ```
 
+</details>
+
 ---
 
 ## 7. Flow: one-command setup
+
+![One-command setup](diagrams/07-setup.png)
+
+<details><summary>Technical version (Mermaid)</summary>
 
 ```mermaid
 flowchart LR
@@ -316,6 +356,8 @@ flowchart LR
   H --> I["7 Status"]
   T["tunnel<br/>cloudflared quick tunnel"] -.->|"N8N_PUBLIC_URL"| G
 ```
+
+</details>
 
 ---
 
@@ -418,3 +460,8 @@ duplicating) and imported/published with the n8n CLI (`import:credentials`, `imp
 
 The two sides talk through three narrow, authenticated interfaces: **HTTP with `X-Swarm-Key`** (n8n → brain),
 **MCP with a Bearer token** (brain → n8n), and the **outbox** in the brain's database.
+
+---
+
+_Diagrams: sources are in [`docs/diagrams/*.mmd`](diagrams/). After editing one, run `docs/diagrams/render.sh` to
+regenerate the PNG images (uses mermaid-cli via `npx`)._

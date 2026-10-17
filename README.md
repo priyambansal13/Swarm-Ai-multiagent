@@ -110,6 +110,10 @@ cd .. && node scripts/swarm.mjs n8n
 Detailed flows (web chat, phone messages, agent graph, scheduler, Google connect, setup) and a library-by-library
 explanation: **[docs/ARCHITECTURE.md](docs/ARCHITECTURE.md)**.
 
+![SwarmAI overview](docs/diagrams/01-overview.png)
+
+<details><summary>Technical version (Mermaid)</summary>
+
 ```mermaid
 flowchart LR
   subgraph USERS["Users"]
@@ -142,6 +146,8 @@ flowchart LR
   G --> EXT
   BRAIN <--> DB
 ```
+
+</details>
 
 **One turn:** a message arrives (web via AG-UI, or Telegram/WhatsApp via n8n) → the **master agent** reads your
 profile facts and history, then calls specialist agents as tools — several at once when the request has several parts

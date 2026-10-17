@@ -1,0 +1,37 @@
+flowchart TB
+  subgraph USERS[" 👥 Users "]
+    direction LR
+    WEBU["🖥️ Browser / installed app"]
+    TG["📱 Telegram"]
+    WA["📱 WhatsApp"]
+  end
+
+  WEB["<b>Web app</b><br/>Next.js · :3200"]
+  TUN["☁️ Cloudflare tunnel<br/>public HTTPS address"]
+  N8N["<b>n8n — the hands</b><br/>receives & sends messages<br/>runs the every-minute scheduler"]
+  BRAIN["<b>Brain — the thinking</b><br/>NestJS + LangGraph<br/>master agent + 10 specialists"]
+  DB[("<b>PostgreSQL</b><br/>+ pgvector")]
+  AI["🤖 OpenAI<br/>chat · voice · vision"]
+  APIS["🌐 Google · SerpAPI<br/>Weather · Yatra AI"]
+
+  WEBU --> WEB
+  WEB -- "live chat stream (AG-UI)" --> BRAIN
+  TG --> TUN
+  WA --> TUN
+  TUN -- "webhooks" --> N8N
+  N8N -- "message in / reply out" --> BRAIN
+  BRAIN --> AI
+  BRAIN --> APIS
+  BRAIN --- DB
+  N8N --- DB
+
+  classDef user fill:#FEF3C7,stroke:#D97706,color:#111;
+  classDef brain fill:#DBEAFE,stroke:#2563EB,color:#111;
+  classDef hands fill:#FFEDD5,stroke:#EA580C,color:#111;
+  classDef data fill:#DCFCE7,stroke:#16A34A,color:#111;
+  classDef ext fill:#F3F4F6,stroke:#6B7280,color:#111;
+  class WEBU,TG,WA user;
+  class WEB,BRAIN brain;
+  class N8N,TUN hands;
+  class DB data;
+  class AI,APIS ext;

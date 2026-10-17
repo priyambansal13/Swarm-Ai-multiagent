@@ -1,0 +1,25 @@
+sequenceDiagram
+  autonumber
+  actor U as You
+  participant W as Web app
+  participant M as Master agent
+  participant S as Specialist agents
+  participant A as Approval step
+
+  U->>W: "Email Rahul the deck is coming Friday, and Pune weather tomorrow?"
+  W->>M: start a run (live stream)
+  par in parallel
+    M->>S: Email agent: prepare the email
+    S-->>M: email PROPOSED (not sent)
+  and
+    M->>S: Travel agent: weather
+    S-->>M: forecast
+  end
+  M->>A: 1 action needs approval
+  A-->>W: answer + approval card
+  W-->>U: shows [Approve] [Reject]
+  U->>W: Approve
+  W->>A: resume with "approved"
+  A->>A: send email · log it · update Sheet
+  A-->>U: "Sent ✅"
+  Note over A: Nothing is sent, changed or deleted<br/>until you approve

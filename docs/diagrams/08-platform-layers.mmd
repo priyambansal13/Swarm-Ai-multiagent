@@ -1,0 +1,12 @@
+flowchart TB
+  V["<b>Industry packs</b> — configure per client<br/>Support desk · Sales · Finance & collections · HR · Clinics · Real estate<br/>Education · Logistics · Travel · D2C commerce · Events · Executive assistant"]
+  H["<b>Shared agents</b> — every client<br/>Knowledge · Meetings · Data analyst · Document generator<br/>Human handoff · Translator · Forms · Payments"]
+  P["<b>Platform</b> — build once<br/>Multi-company & roles · Agents as settings · Approval rules<br/>Connectors · Knowledge base · Staff inbox · Cost & quality tracking"]
+  C["<b>Channels</b><br/>WhatsApp · Telegram · Web · Email · Slack / Teams · Voice calls"]
+  V --> H --> P --> C
+
+  classDef v fill:#FEF3C7,stroke:#D97706,color:#111;
+  classDef h fill:#DBEAFE,stroke:#2563EB,color:#111;
+  classDef p fill:#DCFCE7,stroke:#16A34A,color:#111;
+  classDef c fill:#F3F4F6,stroke:#6B7280,color:#111;
+  class V v; class H h; class P p; class C c;

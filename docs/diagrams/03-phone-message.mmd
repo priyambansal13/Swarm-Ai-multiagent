@@ -1,0 +1,19 @@
+sequenceDiagram
+  autonumber
+  actor U as You (phone)
+  participant P as Telegram / WhatsApp
+  participant N as n8n
+  participant B as Brain
+  participant O as OpenAI
+
+  U->>P: voice note "remind me at 9 pm to call mom"
+  P->>N: webhook (through the tunnel)
+  N->>N: read message · download audio
+  N->>B: message + audio
+  B->>O: speech → text
+  B->>B: agents do the work (same as web)
+  B->>O: text → speech (you spoke, so it speaks back)
+  B-->>N: reply text + audio
+  N-->>P: send reply
+  P-->>U: "⏰ Reminder set for 9 pm" + voice
+  Note over U,B: Needs approval? You get "Reply YES / NO".<br/>Not linked yet? You get "send LINK code".

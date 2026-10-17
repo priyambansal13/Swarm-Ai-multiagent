@@ -15,6 +15,10 @@ platform for multiple client organisations, (2) add **horizontal agents** every 
 **industry packs** — preset agents + tools + flows + a demo — that can be configured per client in days, not built
 from scratch.
 
+![Platform, shared agents and industry packs](diagrams/08-platform-layers.png)
+
+<details><summary>Technical version (Mermaid)</summary>
+
 ```mermaid
 flowchart TB
   subgraph P["Platform (build once)"]
@@ -34,6 +38,8 @@ flowchart TB
   end
   P --> H --> V
 ```
+
+</details>
 
 ---
 
@@ -240,6 +246,10 @@ calendar, CRM access) and a WhatsApp number.
 
 ## 7. Prioritised roadmap
 
+![Value vs effort](diagrams/09-value-effort.png)
+
+<details><summary>Technical version (Mermaid)</summary>
+
 ```mermaid
 quadrantChart
   title Value vs effort (what to build first)
@@ -261,6 +271,8 @@ quadrantChart
   "Workflow builder": [0.8, 0.5]
   "Social content": [0.3, 0.35]
 ```
+
+</details>
 
 | Phase | Weeks | Deliver | Pitchable result |
 |---|---|---|---|

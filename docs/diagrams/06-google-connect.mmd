@@ -1,0 +1,16 @@
+sequenceDiagram
+  autonumber
+  actor U as You
+  participant W as Web app
+  participant B as Brain
+  participant G as Google
+
+  U->>W: Settings → Connect Google
+  W->>B: start connect
+  B-->>U: open Google sign-in
+  U->>G: sign in + tick all permissions
+  G-->>B: authorisation code
+  B->>G: exchange for a long-lived token
+  B->>B: encrypt & store the token
+  B->>G: create "SwarmAI — your email" sheet (6 tabs)
+  B-->>W: ✅ connected (or what's missing)

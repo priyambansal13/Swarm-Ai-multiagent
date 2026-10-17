@@ -1,0 +1,19 @@
+flowchart TB
+  IN(["📨 Your message"]) --> M["<b>Master agent</b><br/>decides which specialists to ask"]
+  M --> SP["<b>Specialists</b> (in parallel)<br/>📧 Email · 📅 Calendar · 🔎 Research · ✈️ Travel<br/>🗂️ Records · 💰 Finance · 📝 Notes · ⏰ Reminders<br/>🛒 Shopping · 📄 Documents"]
+  SP -- "results + proposed actions" --> M
+  M --> Q{"Anything to<br/>send / change / delete?"}
+  Q -- "No" --> R1(["💬 Reply"])
+  Q -- "Yes" --> C["<b>Approval step</b><br/>pause & save state"]
+  C --> ASK(["❓ Approve or reject?"])
+  ASK -- "Approve" --> X["Do it<br/>Gmail · Calendar · Sheets · DB"]
+  ASK -- "Reject" --> N0["Nothing is done"]
+  X --> R2(["✅ Done"])
+  N0 --> R2
+
+  classDef brain fill:#DBEAFE,stroke:#2563EB,color:#111;
+  classDef warn fill:#FEF3C7,stroke:#D97706,color:#111;
+  classDef ok fill:#DCFCE7,stroke:#16A34A,color:#111;
+  class M,SP brain;
+  class Q,C,ASK warn;
+  class X,R1,R2 ok;

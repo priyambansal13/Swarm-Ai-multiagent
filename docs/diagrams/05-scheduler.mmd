@@ -1,0 +1,17 @@
+sequenceDiagram
+  autonumber
+  participant S as n8n scheduler
+  participant B as Brain
+  participant D as Database
+  participant P as Your phone
+
+  loop every minute
+    S->>B: "tick"
+    B->>B: what's due now? reminders, morning brief,<br/>inbox triage, follow-ups, price drops, weekly review
+    B->>D: save messages in the outbox
+    B-->>S: messages to send
+    S->>P: send on Telegram / WhatsApp
+    S->>B: report sent / failed
+    B->>D: mark each message
+  end
+  Note over S,D: Stored first, confirmed after sending →<br/>no message is lost or sent twice

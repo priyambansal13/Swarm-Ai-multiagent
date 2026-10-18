@@ -54,12 +54,12 @@ below, replace `ubuntu@` with `opc@` if your server runs Oracle Linux.
 3. Note the instance's **public IP**.
 
 ## 3. Address (you, ~5 min)
-1. **duckdns.org** → sign in with Google/GitHub → add a subdomain, e.g. `swarm-ai` → set it to the public IP.
+1. **duckdns.org** → sign in with Google/GitHub → add a subdomain, e.g. `my-swarm` → set it to the public IP.
 2. Keep the **token** (shown on the DuckDNS page) for step 5 — it is typed on the server, not stored in the repo.
 
 ## 4. Prepare settings (your Mac)
 ```bash
-./setup.sh server-env swarm-ai.duckdns.org
+./setup.sh server-env my-swarm.duckdns.org
 ```
 Writes `.swarm/server/.env` and `.swarm/server/brain.env` (git-ignored): your current keys, public URLs for the
 domain, fresh production secrets (database password, n8n encryption key, n8n↔brain tokens). `APP_SECRET` stays the
@@ -71,7 +71,7 @@ same so migrated data (Google tokens, org keys) still decrypts. The Yatra travel
 ```bash
 ssh ubuntu@<ip>
 git clone https://github.com/priyambansal13/Swarm-Ai-multiagent.git swarm-ai     # private repo: use a deploy key or rsync
-cd swarm-ai && bash infra/server-bootstrap.sh swarm-ai                           # asks for the DuckDNS token
+cd swarm-ai && bash infra/server-bootstrap.sh my-swarm                           # asks for the DuckDNS token
 exit
 ```
 Then from your Mac copy the settings:
@@ -86,7 +86,7 @@ ssh ubuntu@<ip>
 cd swarm-ai && ./setup.sh deploy
 ```
 First build takes ~5–10 minutes on the A1 VM. At the end: all containers healthy, workflows published, Telegram and
-WhatsApp webhooks pointing at `https://swarm-ai.duckdns.org/webhook/…`, HTTPS certificate issued.
+WhatsApp webhooks pointing at `https://my-swarm.duckdns.org/webhook/…`, HTTPS certificate issued.
 
 ## 7. Bring your data (optional, recommended)
 Moves your account, organisation, knowledge base and history from the Mac. On the Mac:
@@ -105,15 +105,17 @@ Without this step, sign up again on the new address (you become owner of a new o
 
 ## 8. After go-live
 - **Google:** Cloud Console → APIs & Services → Credentials → your OAuth client → add redirect URI
-  `https://swarm-ai.duckdns.org/api/google/callback` (keep the localhost one for the Mac).
+  `https://my-swarm.duckdns.org/api/google/callback` (keep the localhost one for the Mac).
 - **Telegram/WhatsApp now point at the server.** Don't run `./setup.sh tunnel` on the Mac any more — it would move
   the webhooks back to the laptop. For local development, use the web app only, or a second test bot.
 - **Phones:** members re-open the app at the new address and "Add to Home Screen" again.
-- **Uptime alert (optional):** UptimeRobot free → `https://swarm-ai.duckdns.org/api/health`.
+- **Uptime alert (optional):** UptimeRobot free → `https://my-swarm.duckdns.org/api/health`.
 - **Off-server backups (optional):** Object Storage → create bucket → *Pre-authenticated request* (permit object
   writes) → save the URL in `~/.swarm-backup-url` on the server.
 
 ## Everyday operations (on the server, in `~/swarm-ai`)
+More checks and troubleshooting: [OPERATIONS.md](OPERATIONS.md).
+
 | Task | Command |
 |---|---|
 | Update to the latest code | `git pull && ./setup.sh deploy` |

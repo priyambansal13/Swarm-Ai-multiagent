@@ -604,7 +604,7 @@ const DOMAIN_RE = /^(?!-)[a-z0-9-]{1,63}(?<!-)(\.(?!-)[a-z0-9-]{1,63}(?<!-))+$/;
 function serverEnv() {
   step('S', 'Server configuration');
   const domain = (args.filter((a) => !a.startsWith('--'))[1] ?? '').trim().toLowerCase();
-  if (!DOMAIN_RE.test(domain)) die('Usage: node scripts/swarm.mjs server-env <domain>   e.g. swarm-ai.duckdns.org');
+  if (!DOMAIN_RE.test(domain)) die('Usage: node scripts/swarm.mjs server-env <domain>   e.g. my-swarm.duckdns.org');
   if (!existsSync(P.rootEnv) || !existsSync(P.brainEnv)) die('Run setup first — .env and brain/.env are copied from this computer');
   mkdirSync(SERVER_DIR, { recursive: true });
   const rootOut = join(SERVER_DIR, '.env'), brainOut = join(SERVER_DIR, 'brain.env');
@@ -636,7 +636,7 @@ async function deploy() {
   step('D', 'Deploy (production containers)');
   const env = readEnv(P.rootEnv);
   if (env.COMPOSE_FILE !== PROD_COMPOSE) die(`.env must contain COMPOSE_FILE=${PROD_COMPOSE} — create it with server-env on your computer`);
-  if (!DOMAIN_RE.test(env.APP_DOMAIN ?? '')) die('.env needs APP_DOMAIN set to a plain host name, e.g. swarm-ai.duckdns.org');
+  if (!DOMAIN_RE.test(env.APP_DOMAIN ?? '')) die('.env needs APP_DOMAIN set to a plain host name, e.g. my-swarm.duckdns.org');
   if (!existsSync(P.brainEnv)) die('brain/.env is missing — copy .swarm/server/brain.env from your computer');
   if (sh('docker', ['compose', 'version']).code !== 0) die('Docker with the compose plugin is required (infra/server-bootstrap.sh installs it)');
   mustRun('build images (first time takes a few minutes)', 'docker', ['compose', 'build'], { inherit: true });

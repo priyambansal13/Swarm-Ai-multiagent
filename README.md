@@ -444,6 +444,7 @@ swarm-ai/
 ├── docs/DEPLOY-ORACLE.md       # production runbook (Oracle Cloud Always Free)
 ├── docs/DEPLOYMENT-ARCHITECTURE.md  # production components, request paths, release pipeline, operations
 ├── docs/DEPLOYMENT-FREE.md     # free hosting options, costs, risks
+├── docs/OPERATIONS.md          # server status / operations cheat sheet
 ├── docs/PLATFORM.md            # organisations, agent registry, knowledge base, customer desk, admin console
 ├── docs/sales/                 # customer deck, features by role, commercialisation plan
 ├── docker-compose.yml          # Postgres (pgvector) + n8n
@@ -538,6 +539,9 @@ The server's `swarm-ai` folder is a git checkout of `main`, so merging to `main`
 the whole release process. `.env` and `brain/.env` on the server are git-ignored and never pulled or pushed.
 
 ### Everyday operations (on the server, in `~/swarm-ai`)
+Full cheat sheet — health checks from your computer, SSH one-liners, n8n runs, what "good" looks like,
+troubleshooting: **[docs/OPERATIONS.md](docs/OPERATIONS.md)**.
+
 | Task | Command |
 |---|---|
 | Status / health | `./setup.sh status` · `docker compose ps` (brain and web show `healthy`) |

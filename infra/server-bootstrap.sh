@@ -2,7 +2,7 @@
 # One-time preparation of a fresh server for SwarmAI (Oracle Cloud Always Free Ampere A1, or any VPS) — Ubuntu/Debian
 # or Oracle Linux/RHEL 9. Run as the normal login user (ubuntu or opc), from the repo folder:
 #
-#   bash infra/server-bootstrap.sh <duckdns-subdomain>     e.g.  bash infra/server-bootstrap.sh swarm-ai
+#   bash infra/server-bootstrap.sh <duckdns-subdomain>     e.g.  bash infra/server-bootstrap.sh my-swarm
 #
 # Installs Docker + Node.js 22, adds 4 GB swap, opens ports 80/443, enables automatic security updates, keeps the
 # DuckDNS name pointed at this server, and schedules the nightly database backup. Safe to re-run.

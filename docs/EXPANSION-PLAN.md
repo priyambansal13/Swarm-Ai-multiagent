@@ -335,14 +335,15 @@ margin; pilot = 4 weeks on one pack with agreed KPIs.
 | Hallucination in regulated domains (health, finance, HR) | Knowledge-only answers with citations, refusal rules, mandatory human review, eval suites |
 | LLM cost per conversation | Fast model for specialists (already), caching, summarised history, per-org caps |
 | Google/Microsoft OAuth verification for restricted scopes (Gmail) | Budget time for Google's verification (security assessment for restricted scopes); start with clients using their own OAuth app |
-| Single machine today | Hosted deployment with backups and monitoring (P12) before the first client |
+| Single server | Done for demos/pilots: Oracle Cloud Always Free with HTTPS, nightly backups, alerts ([DEPLOYMENT-ARCHITECTURE.md](DEPLOYMENT-ARCHITECTURE.md)); add failover before promising uptime |
 
 ---
 
 ## 10. Suggested next step
 
 > **Status (18 Oct 2026): P1, P3, P6, P7 and P10 are built** — see [PLATFORM.md](PLATFORM.md). With the included
-> `support-desk` pack this is a working **Pack A (WhatsApp Support Desk)** demo. Next: P2 (finer roles), P4 (approval
+> `support-desk` pack this is a working **Pack A (WhatsApp Support Desk)** demo. **P12 hosting is live** (Oracle Cloud
+> Always Free, Docker + Caddy HTTPS, backups, invite-only sign-up); the DPDP export/deletion work in P12 is still open. Next: P2 (finer roles), P4 (approval
 > rules by amount/recipient), P8 (WhatsApp templates), P9 (cost tracking and evals), then Payments + Pack B.
 
 Build **Phase 1 items P1, P3, P6 and P7** first (multi-tenancy, config-driven agents, knowledge base, human handoff) —

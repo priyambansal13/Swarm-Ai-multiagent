@@ -1,0 +1,34 @@
+flowchart TB
+  subgraph ONCE["One time"]
+    direction LR
+    O1["<b>Create VM</b><br/>OCI console: A1 shape,<br/>public IP, SSH key,<br/>ports 80/443"]
+    O2["<b>Bootstrap</b><br/>infra/server-bootstrap.sh<br/>Docker · Node 22 · firewall<br/>swap · updates · cron"]
+    O3["<b>Settings</b> (your Mac)<br/>setup.sh server-env &lt;domain&gt;<br/>→ scp .env + brain/.env"]
+    O1 --> O2 --> O3
+  end
+  subgraph EVERY["Every release"]
+    direction LR
+    R1["<b>Code</b> on your Mac<br/>branch + commit"]
+    R2["<b>Pull request</b><br/>GitHub"]
+    R3["<b>AI PR reviewer</b><br/>findings → fix or explain"]
+    R4["<b>Merge to main</b>"]
+    R5["<b>On the server</b><br/>git pull &amp;&amp; ./setup.sh deploy"]
+    R1 --> R2 --> R3 --> R4 --> R5
+  end
+  subgraph DEPLOY["What ./setup.sh deploy does"]
+    direction LR
+    D1["docker compose build<br/>brain + web images"]
+    D2["docker compose up -d<br/>Postgres · n8n · brain · web · Caddy"]
+    D3["wait for health<br/>DB → brain → web → n8n"]
+    D4["n8n: import credentials<br/>+ 5 workflows, publish"]
+    D5["register webhooks<br/>Telegram setWebhook ·<br/>Meta subscription"]
+    D6["check HTTPS<br/>https://domain/api/health"]
+    D1 --> D2 --> D3 --> D4 --> D5 --> D6
+  end
+  ONCE -->|"then, for every release"| EVERY
+  EVERY -->|"runs"| DEPLOY
+
+  classDef once fill:#FEF3C7,stroke:#D97706,color:#111;
+  classDef rel fill:#DBEAFE,stroke:#2563EB,color:#111;
+  classDef dep fill:#DCFCE7,stroke:#16A34A,color:#111;
+  class O1,O2,O3 once; class R1,R2,R3,R4,R5 rel; class D1,D2,D3,D4,D5,D6 dep;

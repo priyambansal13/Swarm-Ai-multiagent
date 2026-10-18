@@ -1,0 +1,35 @@
+flowchart LR
+  subgraph SCHED["Scheduled on the server"]
+    direction TB
+    C1["<b>02:30 nightly</b><br/>infra/backup.sh"]
+    C2["<b>every 5 min</b><br/>duckdns-update"]
+    C3["<b>every minute</b><br/>n8n Scheduler → brain tick"]
+  end
+  C1 --> P1["pg_dump swarm + n8n<br/>→ .part file"]
+  P1 -->|"ok"| P2[("~/swarm-backups<br/>*.sql.gz · 14 days")]
+  P2 -.->|"optional"| P3[("OCI Object Storage<br/>private bucket")]
+  P1 -->|"fails"| A1["⚠️ Telegram alert<br/>admin chat"]
+  C2 --> Q1{"DuckDNS<br/>answers OK?"}
+  Q1 -->|"KO"| A2["journalctl -t duckdns"]
+  C3 --> R1["reminders · briefs ·<br/>triage · price alerts"]
+  R1 --> R2["Telegram / WhatsApp / web"]
+  subgraph HEALTH["Self-healing"]
+    direction TB
+    H1["restart: unless-stopped<br/>(crash or reboot)"]
+    H2["health checks<br/>brain /api/health · web /"]
+    H3["n8n error workflow<br/>→ Telegram alert"]
+    H4["dnf-automatic<br/>security updates"]
+  end
+  subgraph SECRETS["Secrets (never in git)"]
+    direction TB
+    S1["server: .env · brain/.env"]
+    S2["Mac: .swarm/server/ · .env files"]
+    S3["encrypted backup<br/>iCloud + Keychain passphrase"]
+    S2 --> S3
+  end
+
+  classDef job fill:#DBEAFE,stroke:#2563EB,color:#111;
+  classDef data fill:#DCFCE7,stroke:#16A34A,color:#111;
+  classDef alert fill:#FEE2E2,stroke:#DC2626,color:#111;
+  classDef ok fill:#FEF3C7,stroke:#D97706,color:#111;
+  class C1,C2,C3,P1,R1 job; class P2,P3,S1,S2,S3 data; class A1,A2,H3 alert; class H1,H2,H4,R2,Q1 ok;

@@ -123,7 +123,8 @@ Turn these on/off, change the brief time, timezone, notify channel (Telegram / W
 
 Details: [PLATFORM.md](PLATFORM.md).
 - **Roles:** owner / admin see **Admin**; owner / admin / agent see **Inbox**; members just have their own assistant.
-  Invite people from Admin → Members (single-use link, 7 days).
+  Invite people from Admin → Members (single-use link, 7 days). On the server, sign-up is **invite-only**: new people
+  must use an invite link.
 - **Admin → Agents:** switch agents on/off, add *extra instructions* ("always reply in Hindi"), change the model, tick
   tools that must be **approved** before they run, create **custom agents**, or apply an **industry pack** (Admin →
   Organisation).
@@ -135,13 +136,14 @@ Details: [PLATFORM.md](PLATFORM.md).
   the customer's WhatsApp/Telegram), then **Hand back to bot**. Try it first with **Test as a customer**.
 
 ## For developers
-- API + Swagger: http://localhost:4200/api/docs (also AG-UI streaming at `POST /api/agui`)
+- API + Swagger: `https://<your-domain>/api/docs` on the server, http://localhost:4200/api/docs locally (AG-UI streaming at `POST /api/agui`)
 - n8n editor: http://localhost:5678 — see executions of every channel message and scheduler tick
 - Logs: `.swarm/logs/` · status: `./setup.sh status` · checks: `./setup.sh doctor`
 
 ## Good to know
-- Everything runs on this Mac: if it sleeps or shuts down, SwarmAI is offline. After a restart run `./setup.sh start`,
-  and `./setup.sh tunnel` (the free tunnel URL changes; the script re-registers Telegram/WhatsApp webhooks).
+- SwarmAI now runs 24×7 on the Oracle Cloud server (address in your notes; README §17). Your Mac can be off. Don't run
+  `./setup.sh tunnel` or `./setup.sh n8n` on the Mac — that would move Telegram/WhatsApp back to the laptop.
+- n8n editor on the server: `ssh -L 5678:localhost:5678 opc@<server-ip>`, then http://localhost:5678.
 - WhatsApp uses Meta's **test number**: only numbers on the app's *To* list (max 5) can talk to it. Your own number
   needs Meta business verification.
 - Several people can use SwarmAI: each signs up in the web app and connects their own Google account and chats.

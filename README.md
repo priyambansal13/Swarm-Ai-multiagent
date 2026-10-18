@@ -442,6 +442,7 @@ swarm-ai/
 ├── README.md                   # this file
 ├── docs/SETUP-INTEGRATIONS.md  # Google, Telegram, WhatsApp, tunnel, SerpAPI, LangSmith
 ├── docs/DEPLOY-ORACLE.md       # production runbook (Oracle Cloud Always Free)
+├── docs/DEPLOYMENT-ARCHITECTURE.md  # production components, request paths, release pipeline, operations
 ├── docs/DEPLOYMENT-FREE.md     # free hosting options, costs, risks
 ├── docs/PLATFORM.md            # organisations, agent registry, knowledge base, customer desk, admin console
 ├── docs/sales/                 # customer deck, features by role, commercialisation plan
@@ -496,8 +497,11 @@ swarm-ai/
 
 ## 17. Production deployment (Oracle Cloud, free)
 
-Full runbook: **[docs/DEPLOY-ORACLE.md](docs/DEPLOY-ORACLE.md)** · why Oracle and the alternatives:
-[docs/DEPLOYMENT-FREE.md](docs/DEPLOYMENT-FREE.md).
+Full runbook: **[docs/DEPLOY-ORACLE.md](docs/DEPLOY-ORACLE.md)** · components, request paths, release pipeline and
+operations with diagrams: **[docs/DEPLOYMENT-ARCHITECTURE.md](docs/DEPLOYMENT-ARCHITECTURE.md)** · why Oracle and the
+alternatives: [docs/DEPLOYMENT-FREE.md](docs/DEPLOYMENT-FREE.md).
+
+![Deployment components](docs/diagrams/13-deployment.png)
 
 ### Where everything runs
 One **Oracle Cloud Always Free** VM (Ampere A1 ARM, 1 OCPU / 6 GB or 2 / 12; Oracle Linux 9 or Ubuntu), everything in

@@ -1,5 +1,8 @@
 # Deploying SwarmAI at zero cost — plan
 
+> **Status (18 Oct 2026): done.** SwarmAI runs on Oracle Cloud Always Free (A1, 1 OCPU / 6 GB, Oracle Linux 9)
+> exactly as planned here — see [DEPLOYMENT-ARCHITECTURE.md](DEPLOYMENT-ARCHITECTURE.md) and [DEPLOY-ORACLE.md](DEPLOY-ORACLE.md).
+
 _Plan, 18 Oct 2026. Free-tier limits change often (two big ones changed this year); re-check the linked pages before
 starting._
 

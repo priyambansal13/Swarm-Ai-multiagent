@@ -2,6 +2,7 @@
 
 Result: SwarmAI running 24×7 at `https://<name>.duckdns.org`, with Telegram/WhatsApp webhooks, HTTPS, nightly backups,
 for ₹0/month (plus your OpenAI usage). Why this setup and what it costs: [DEPLOYMENT-FREE.md](DEPLOYMENT-FREE.md).
+How it fits together (all components, request paths, operations): [DEPLOYMENT-ARCHITECTURE.md](DEPLOYMENT-ARCHITECTURE.md).
 
 ```mermaid
 flowchart LR

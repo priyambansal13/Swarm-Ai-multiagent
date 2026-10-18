@@ -621,6 +621,7 @@ function serverEnv() {
   writeEnv(brainOut, {
     PUBLIC_API_URL: url, WEB_URL: url, CORS_ORIGIN: url, GOOGLE_REDIRECT_URI: `${url}/api/google/callback`,
     SWARM_N8N_TOKEN: s.SWARM_N8N_TOKEN, N8N_MCP_TOKEN: s.N8N_MCP_TOKEN, YATRA_API_URL: '', YATRA_WEB_URL: '',
+    SIGNUP_MODE: 'invite', // public server: invite links only (the first account is always allowed)
   });
   ok(`wrote .swarm/server/.env and .swarm/server/brain.env for ${url} (secrets not shown)`);
   info('copy them to the server (docs/DEPLOY-ORACLE.md step 4):');

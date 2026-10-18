@@ -7,8 +7,20 @@
 # private (the default); the pre-authenticated request only allows writing objects, not listing or reading them.
 #
 # Restore one database:  gunzip -c FILE.sql.gz | docker exec -i swarm-db psql -U swarm -d swarm
+#
+# On failure it also sends a Telegram message to SWARM_ADMIN_TELEGRAM_CHAT_ID (the same chat that gets n8n error alerts).
 set -euo pipefail
 cd "$(dirname "$0")/.."
+
+envval() { grep -E "^$1=" .env 2>/dev/null | head -1 | cut -d= -f2- || true; }
+alert() {
+  local token chat
+  token="$(envval TELEGRAM_BOT_TOKEN)"; chat="$(envval SWARM_ADMIN_TELEGRAM_CHAT_ID)"
+  [ -n "$token" ] && [ -n "$chat" ] || return 0
+  curl -fsS -m 15 "https://api.telegram.org/bot${token}/sendMessage" --data-urlencode "chat_id=${chat}" \
+    --data-urlencode "text=⚠️ SwarmAI backup failed on $(hostname): $1" >/dev/null || true
+}
+trap 'alert "line $LINENO: $BASH_COMMAND"' ERR
 DIR="$HOME/swarm-backups"
 mkdir -p "$DIR"
 PGUSER_NAME="$(grep -E '^POSTGRES_USER=' .env 2>/dev/null | cut -d= -f2 || true)"
@@ -19,6 +31,8 @@ for db in swarm n8n; do
   if ! docker exec swarm-db pg_dump -U "$PGUSER_NAME" -d "$db" --no-owner --clean --if-exists | gzip > "$f.part"; then
     rm -f "$f.part"
     echo "$(date '+%F %T') backup FAILED for database $db" >&2
+    trap - ERR
+    alert "database $db could not be dumped — see ~/swarm-backups/backup.log"
     exit 1
   fi
   mv "$f.part" "$f"

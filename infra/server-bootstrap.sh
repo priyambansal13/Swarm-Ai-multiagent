@@ -97,7 +97,9 @@ if [ -n "$SUB" ]; then
   read -rsp "DuckDNS token (input hidden): " TOKEN; echo
   sudo tee /usr/local/bin/duckdns-update >/dev/null <<EOS
 #!/bin/sh
-curl -fsS "https://www.duckdns.org/update?domains=${SUB}&token=${TOKEN}&ip=" -o /var/log/duckdns.last
+rm -f /var/log/duckdns.last
+curl -fsS -m 30 "https://www.duckdns.org/update?domains=${SUB}&token=${TOKEN}&ip=" -o /var/log/duckdns.last
+grep -qx OK /var/log/duckdns.last 2>/dev/null || logger -t duckdns "DuckDNS update failed for ${SUB}.duckdns.org (answer: \$(head -c 40 /var/log/duckdns.last 2>/dev/null || echo none))"
 EOS
   sudo chmod 700 /usr/local/bin/duckdns-update
   sudo /usr/local/bin/duckdns-update && echo "DuckDNS update: $(sudo cat /var/log/duckdns.last)"

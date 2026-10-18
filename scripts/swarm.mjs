@@ -596,13 +596,14 @@ async function doctor() {
 // ───────────────────────────────────────────── production server (docs/DEPLOY-ORACLE.md)
 const SERVER_DIR = join(ROOT, '.swarm', 'server');
 const PROD_COMPOSE = 'docker-compose.yml:docker-compose.prod.yml';
+const DOMAIN_RE = /^[a-z0-9-]+(\.[a-z0-9-]+)+$/; // plain host name: no scheme, port, path or spaces
 
 /** On your computer: write the server's .env and brain/.env into .swarm/server/ from the local ones, with public URLs
  *  for `domain` and fresh production secrets. Secrets are kept on later runs (the database password must not change). */
 function serverEnv() {
   step('S', 'Server configuration');
   const domain = (args.filter((a) => !a.startsWith('--'))[1] ?? '').trim().toLowerCase();
-  if (!/^[a-z0-9-]+(\.[a-z0-9-]+)+$/.test(domain)) die('Usage: node scripts/swarm.mjs server-env <domain>   e.g. swarm-ai.duckdns.org');
+  if (!DOMAIN_RE.test(domain)) die('Usage: node scripts/swarm.mjs server-env <domain>   e.g. swarm-ai.duckdns.org');
   if (!existsSync(P.rootEnv) || !existsSync(P.brainEnv)) die('Run setup first — .env and brain/.env are copied from this computer');
   mkdirSync(SERVER_DIR, { recursive: true });
   const rootOut = join(SERVER_DIR, '.env'), brainOut = join(SERVER_DIR, 'brain.env');
@@ -633,7 +634,7 @@ async function deploy() {
   step('D', 'Deploy (production containers)');
   const env = readEnv(P.rootEnv);
   if (env.COMPOSE_FILE !== PROD_COMPOSE) die(`.env must contain COMPOSE_FILE=${PROD_COMPOSE} — create it with server-env on your computer`);
-  if (!isSet(env.APP_DOMAIN)) die('.env is missing APP_DOMAIN');
+  if (!DOMAIN_RE.test(env.APP_DOMAIN ?? '')) die('.env needs APP_DOMAIN set to a plain host name, e.g. swarm-ai.duckdns.org');
   if (!existsSync(P.brainEnv)) die('brain/.env is missing — copy .swarm/server/brain.env from your computer');
   if (sh('docker', ['compose', 'version']).code !== 0) die('Docker with the compose plugin is required (infra/server-bootstrap.sh installs it)');
   mustRun('build images (first time takes a few minutes)', 'docker', ['compose', 'build'], { inherit: true });

@@ -7,7 +7,8 @@ RUN pnpm install --frozen-lockfile
 COPY . .
 ARG NEXT_PUBLIC_API_URL
 ENV NEXT_PUBLIC_API_URL=$NEXT_PUBLIC_API_URL NEXT_TELEMETRY_DISABLED=1
-RUN test -n "$NEXT_PUBLIC_API_URL" && pnpm build
+RUN [ -n "$NEXT_PUBLIC_API_URL" ] || { echo "build arg NEXT_PUBLIC_API_URL is required (https://<your-domain>)"; exit 1; } \
+ && pnpm build
 
 FROM node:22-bookworm-slim
 WORKDIR /app

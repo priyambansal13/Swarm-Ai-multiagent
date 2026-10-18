@@ -16,7 +16,7 @@
 		reverse_proxy web:3200
 	}
 	header {
-		Strict-Transport-Security "max-age=31536000"
+		Strict-Transport-Security "max-age=31536000; includeSubDomains"
 		-Server
 	}
 }

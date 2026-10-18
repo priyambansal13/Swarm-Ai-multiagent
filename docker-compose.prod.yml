@@ -7,6 +7,9 @@
 services:
   postgres:
     restart: unless-stopped
+    environment:
+      # production must never fall back to the development password
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?set POSTGRES_PASSWORD in .env}
     ports: !override
       - "127.0.0.1:${POSTGRES_PORT:-5434}:5432"
 
@@ -16,6 +19,7 @@ services:
       - "127.0.0.1:${N8N_PORT:-5678}:5678"
     environment:
       SWARM_BRAIN_URL: http://brain:4200
+      DB_POSTGRESDB_PASSWORD: ${POSTGRES_PASSWORD:?set POSTGRES_PASSWORD in .env}
       EXECUTIONS_DATA_PRUNE: "true"
       EXECUTIONS_DATA_MAX_AGE: "168" # hours; keeps the n8n database small
 
@@ -30,7 +34,7 @@ services:
     env_file: ./brain/.env
     environment:
       PORT: "4200"
-      DATABASE_URL: postgres://${POSTGRES_USER:-swarm}:${POSTGRES_PASSWORD:-swarm}@postgres:5432/swarm
+      DATABASE_URL: postgres://${POSTGRES_USER:-swarm}:${POSTGRES_PASSWORD:?set POSTGRES_PASSWORD in .env}@postgres:5432/swarm
       N8N_MCP_URL: http://n8n:5678/mcp/swarm-channels
       TZ: ${TIMEZONE:-Asia/Kolkata}
     ports:

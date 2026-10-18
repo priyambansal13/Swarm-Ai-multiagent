@@ -7,6 +7,7 @@
 # Installs Docker + Node.js 22, adds 4 GB swap, opens ports 80/443, enables automatic security updates, keeps the
 # DuckDNS name pointed at this server, and schedules the nightly database backup. Safe to re-run.
 set -euo pipefail
+trap 'echo "server-bootstrap: FAILED at line $LINENO: $BASH_COMMAND" >&2' ERR
 [ "$(id -u)" -eq 0 ] && { echo "Run as the normal user (ubuntu / opc); the script uses sudo where needed."; exit 1; }
 REPO="$(cd "$(dirname "$0")/.." && pwd)"
 SUB="${1:-}"
@@ -84,7 +85,11 @@ else
 fi
 
 echo "== SSH: keys only"
-sudo sed -i 's/^#\?PasswordAuthentication .*/PasswordAuthentication no/' /etc/ssh/sshd_config
+if [ -s "$HOME/.ssh/authorized_keys" ]; then
+  sudo sed -i 's/^#\?PasswordAuthentication .*/PasswordAuthentication no/' /etc/ssh/sshd_config
+else
+  echo "   skipped: no key in ~/.ssh/authorized_keys — password login left as it is so you can't be locked out"
+fi
 sudo systemctl reload ssh 2>/dev/null || sudo systemctl reload sshd 2>/dev/null || true
 
 if [ -n "$SUB" ]; then

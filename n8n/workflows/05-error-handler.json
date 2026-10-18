@@ -5,7 +5,7 @@
   "isArchived": false,
   "nodes": [
     {
-      "id": "9e02cf5c-18f5-4d0f-abd7-364d57b7b6a0",
+      "id": "9b6fdf9d-7358-4624-8946-a6cc10b6804f",
       "name": "Error Trigger",
       "type": "n8n-nodes-base.errorTrigger",
       "typeVersion": 1,
@@ -16,7 +16,7 @@
       "parameters": {}
     },
     {
-      "id": "b8a28d5c-459a-4b58-8b9a-ad860dc21187",
+      "id": "9f9a93a6-99fd-48d0-b92b-b535d01d9bc2",
       "name": "Admin chat configured?",
       "type": "n8n-nodes-base.if",
       "typeVersion": 2.2,
@@ -34,7 +34,7 @@
           },
           "conditions": [
             {
-              "id": "b5331892-ba75-4892-a13c-4257139ceeba",
+              "id": "8b15dbfe-ede7-4091-a01c-c62206636a13",
               "leftValue": "={{ $env.SWARM_ADMIN_TELEGRAM_CHAT_ID }}",
               "rightValue": "",
               "operator": {
@@ -50,7 +50,7 @@
       }
     },
     {
-      "id": "d69f4aad-69e5-492a-9e64-949c4841a82b",
+      "id": "895d9bdf-a258-45cf-b447-30a915370ae5",
       "name": "Notify admin on Telegram",
       "type": "n8n-nodes-base.telegram",
       "typeVersion": 1.2,

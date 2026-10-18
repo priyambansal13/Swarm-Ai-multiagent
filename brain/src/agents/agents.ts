@@ -1,8 +1,10 @@
 import type { StructuredToolInterface } from '@langchain/core/tools';
+import type { AgentAudience } from '../db/entities.js';
 import type { RunContext } from './context.js';
 import type { Services } from './tools/common.js';
 import { calendarTools, emailTools } from './tools/google-tools.js';
 import { documentTools, researchTools, shoppingTools, travelTools } from './tools/info-tools.js';
+import { knowledgeTools } from './tools/knowledge-tools.js';
 import { financeTools, notesTools, recordsTools, reminderTools } from './tools/personal-tools.js';
 
 export interface AgentSpec {
@@ -12,10 +14,12 @@ export interface AgentSpec {
   description: string;
   prompt: string;
   needsGoogle?: boolean;
+  /** Who may use the agent by default: members (staff), outside customers on the desk, or both */
+  audience?: AgentAudience;
   tools: (s: Services, ctx: RunContext) => StructuredToolInterface[];
 }
 
-const CONFIRM_RULE =
+export const CONFIRM_RULE =
   'When asked to send, change or delete something, call the matching tool immediately — never ask for confirmation yourself; the system shows the proposal to the user and asks them. Those tools return PENDING_USER_CONFIRMATION: report what will happen once the user confirms and never claim it is done.';
 
 export const AGENTS: AgentSpec[] = [
@@ -32,7 +36,13 @@ export const AGENTS: AgentSpec[] = [
     tools: calendarTools,
   },
   {
-    id: 'research', label: 'Research',
+    id: 'knowledge', label: 'Knowledge', audience: 'both',
+    description: "The organisation's knowledge base — uploaded documents, web pages, FAQs, policies, price lists — answers with citations.",
+    prompt: 'You are the Knowledge agent. Always call kb_search first; if the passages are weak, search once more with different words. Answer only from the returned passages and cite every fact as [source name, p. N] (leave out the page when it is null; add the URL for web pages). If the passages do not contain the answer, reply exactly "NOT_IN_KNOWLEDGE_BASE" followed by one line on what is missing — never guess or use general knowledge.',
+    tools: knowledgeTools,
+  },
+  {
+    id: 'research', label: 'Research', audience: 'both',
     description: 'Web and news research, reading links, comparisons — always with sources.',
     prompt: 'You are the Research agent. Always search first — never answer factual questions from memory. Include the year in date queries (e.g. "Diwali 2026 date"). Read the best 1–3 sources when needed, prefer official or well-known sources (for Indian festival dates: drikpanchang.com, timeanddate.com, government holiday lists). For exact dates and numbers never rely on a single search snippet: confirm with at least two agreeing sources or by reading the page; if sources disagree or you cannot confirm, say so plainly and give the best-supported answer with that caveat. Answer with a short synthesis and cite sources as markdown links. Say when information may be outdated.',
     tools: (s) => researchTools(s),

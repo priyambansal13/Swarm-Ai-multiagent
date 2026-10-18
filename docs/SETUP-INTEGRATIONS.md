@@ -145,7 +145,19 @@ and tool call appears in LangSmith.
 
 ---
 
-## 9. Error alerts and debugging
+## 9. Customer desk (optional)
+
+To let customers (non-members) chat with your organisation's assistant on WhatsApp/Telegram:
+1. Run `./setup.sh n8n` once after updating SwarmAI — the channel workflows gained a *Has reply?* step (the bot stays
+   silent while staff handle a chat) and pass the receiving WhatsApp `phone_number_id`.
+2. In the web app: Admin → Knowledge (add documents), Admin → Customer desk (turn it on, describe your business).
+3. With Meta's **test number**, only the (max 5) numbers on the *To* list can message it — add a colleague's phone to
+   play the customer. A real business number needs Meta business verification.
+4. Staff get hand-over alerts on their notify channel (Settings) — make sure their Telegram/WhatsApp is linked.
+
+Details: [PLATFORM.md](PLATFORM.md).
+
+## 10. Error alerts and debugging
 
 - `SWARM_ADMIN_TELEGRAM_CHAT_ID` (root `.env`) — your Telegram chat id; n8n's error workflow messages you when a workflow
   fails. Recreate n8n after changing it: `docker compose up -d n8n`.

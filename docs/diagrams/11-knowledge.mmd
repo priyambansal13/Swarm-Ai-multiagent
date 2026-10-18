@@ -1,0 +1,14 @@
+flowchart LR
+  A["Admin adds knowledge<br/>PDF · Word · text · web page"] --> B["Read the text<br/>page by page"]
+  B --> C["Cut into passages<br/>~1,200 characters,<br/>page number kept"]
+  C --> D["Turn each passage<br/>into numbers (embedding)<br/>OpenAI"]
+  D --> E[("Knowledge store<br/>Postgres + pgvector<br/>one per organisation")]
+  Q["Question from a member<br/>or a customer"] --> K["Knowledge agent<br/>finds the closest passages"]
+  E --> K
+  K --> R["Answer only from those passages<br/>with source + page<br/>— or “not found” → hand to a person"]
+
+  classDef you fill:#FEF3C7,stroke:#D97706,color:#111;
+  classDef brain fill:#DBEAFE,stroke:#2563EB,color:#111;
+  classDef data fill:#DCFCE7,stroke:#16A34A,color:#111;
+  classDef ext fill:#F3F4F6,stroke:#6B7280,color:#111;
+  class A,Q,R you; class B,C,K brain; class E data; class D ext;

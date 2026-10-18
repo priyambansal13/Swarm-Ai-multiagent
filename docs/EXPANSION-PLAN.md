@@ -61,6 +61,9 @@ flowchart TB
 
 ## 2. Platform upgrades needed before selling (Phase 1)
 
+> ✅ Built: **P1, P3, P6, P7, P10** ([PLATFORM.md](PLATFORM.md)). Basic owner/admin/agent/member roles from P2 exist;
+> per-tool role rules do not yet.
+
 These are prerequisites for any paying client; most packs depend on them.
 
 | # | Upgrade | What it means | Effort |
@@ -337,6 +340,10 @@ margin; pilot = 4 weeks on one pack with agreed KPIs.
 ---
 
 ## 10. Suggested next step
+
+> **Status (18 Oct 2026): P1, P3, P6, P7 and P10 are built** — see [PLATFORM.md](PLATFORM.md). With the included
+> `support-desk` pack this is a working **Pack A (WhatsApp Support Desk)** demo. Next: P2 (finer roles), P4 (approval
+> rules by amount/recipient), P8 (WhatsApp templates), P9 (cost tracking and evals), then Payments + Pack B.
 
 Build **Phase 1 items P1, P3, P6 and P7** first (multi-tenancy, config-driven agents, knowledge base, human handoff) —
 together they turn the current assistant into **Pack A (WhatsApp Support Desk)**, the easiest pack to sell and demo.

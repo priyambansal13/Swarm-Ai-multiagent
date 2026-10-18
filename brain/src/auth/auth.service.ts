@@ -4,12 +4,17 @@ import { Repository } from 'typeorm';
 import { z } from 'zod';
 import { hashPassword, signToken, verifyPassword, verifyToken } from '../common/crypto.js';
 import { DEFAULT_SETTINGS, User, UserSettings } from '../db/entities.js';
+import { OrgService } from '../orgs/org.service.js';
 
 export const SignupSchema = z.object({
   email: z.string().trim().toLowerCase().email(),
   password: z.string().min(8).max(200),
   name: z.string().trim().min(1).max(80),
   timezone: z.string().optional(),
+  /** Join an existing organisation */
+  invite: z.string().trim().max(20).optional(),
+  /** Name of the new organisation (when not joining one) */
+  orgName: z.string().trim().min(1).max(80).optional(),
 });
 export const LoginSchema = z.object({ email: z.string().trim().toLowerCase().email(), password: z.string().min(1) });
 export const SettingsSchema = z.object({
@@ -29,11 +34,11 @@ export const SettingsSchema = z.object({
 
 const TOKEN_TTL = 30 * 24 * 3600;
 
-export const publicUser = (u: User) => ({ id: u.id, email: u.email, name: u.name, timezone: u.timezone, settings: u.settings });
+export const publicUser = (u: User) => ({ id: u.id, email: u.email, name: u.name, timezone: u.timezone, settings: u.settings, orgId: u.orgId, role: u.role });
 
 @Injectable()
 export class AuthService {
-  constructor(@InjectRepository(User) private readonly users: Repository<User>) {}
+  constructor(@InjectRepository(User) private readonly users: Repository<User>, private readonly orgs: OrgService) {}
 
   private validTz(tz?: string) {
     if (!tz) return 'Asia/Kolkata';
@@ -47,9 +52,16 @@ export class AuthService {
 
   async signup(input: z.infer<typeof SignupSchema>) {
     if (await this.users.findOne({ where: { email: input.email } })) throw new ConflictException('An account with this email already exists');
+    const timezone = this.validTz(input.timezone);
+    // Join the inviting organisation, or start a new one as its owner.
+    const invited = input.invite ? await this.orgs.invite(input.invite) : null;
+    if (invited?.inv.email && invited.inv.email !== input.email) throw new BadRequestException('This invitation is for a different email address.');
+    const org = invited?.org ?? (await this.orgs.createOrg(input.orgName || `${input.name.split(' ')[0]}'s workspace`, timezone));
     const user = await this.users.save(this.users.create({
-      email: input.email, name: input.name, passwordHash: hashPassword(input.password), timezone: this.validTz(input.timezone), settings: { ...DEFAULT_SETTINGS },
+      email: input.email, name: input.name, passwordHash: hashPassword(input.password), timezone, settings: { ...DEFAULT_SETTINGS },
+      orgId: org.id, role: invited?.inv.role ?? 'owner',
     }));
+    if (invited) await this.orgs.useInvite(invited.inv.code);
     return { token: signToken({ sub: user.id }, TOKEN_TTL), user: publicUser(user) };
   }
 

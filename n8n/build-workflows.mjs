@@ -123,6 +123,7 @@ if ($json.data && bin) {
 }
 return { json: { chatId: body.externalId, body } };`);
   const ask = brainPost('Ask SwarmAI brain', '/api/channels/inbound', '={{ JSON.stringify($json.body) }}');
+  const hasReply = ifNotEmpty('Has reply?', '={{ $json.reply }}');
   const reply = node('Send reply', 'n8n-nodes-base.telegram', 1.2, {
     resource: 'message', operation: 'sendMessage',
     chatId: "={{ $('Build brain request').item.json.chatId }}",
@@ -141,14 +142,15 @@ return { json: { chatId: body.externalId, body } };`);
     additionalFields: { appendAttribution: false, title: 'SwarmAI', performer: 'SwarmAI' },
   }, { credentials: { telegramApi: CREDS.telegram } });
   writeFileSync(join(OUT, '01-telegram-channel.json'), JSON.stringify(workflow(IDS.telegram, 'SwarmAI – Telegram channel',
-    [trigger, hasFile, toB64, build, ask, reply, hasVoice, pickVoice, asFile, sendVoice],
+    [trigger, hasFile, toB64, build, ask, hasReply, reply, hasVoice, pickVoice, asFile, sendVoice],
     conn([
       ['Telegram Trigger', 'Has attachment?'],
       ['Has attachment?', 'Attachment → base64', 0],
       ['Has attachment?', 'Build brain request', 1],
       ['Attachment → base64', 'Build brain request'],
       ['Build brain request', 'Ask SwarmAI brain'],
-      ['Ask SwarmAI brain', 'Send reply'],
+      ['Ask SwarmAI brain', 'Has reply?'],
+      ['Has reply?', 'Send reply', 0],
       ['Send reply', 'Voice reply?'],
       ['Voice reply?', 'Pick voice', 0],
       ['Pick voice', 'Voice reply → MP3'],
@@ -173,7 +175,7 @@ for (const item of $input.all()) {
     const kind = msg.audio || msg.voice ? 'audio' : msg.image ? 'image' : msg.document ? 'document' : null;
     out.push({ json: {
       phone: msg.from,
-      body: { channel: 'whatsapp', externalId: msg.from, displayName: name, messageId: msg.id,
+      body: { channel: 'whatsapp', externalId: msg.from, to: val.metadata?.phone_number_id ?? null, displayName: name, messageId: msg.id,
               text: msg.text?.body ?? msg.image?.caption ?? msg.document?.caption ?? msg.button?.text ?? msg.interactive?.button_reply?.title ?? null },
       mediaId: media?.id ?? '', mediaKind: kind, mediaMime: media?.mime_type ?? null, mediaName: msg.document?.filename ?? kind,
     } });
@@ -194,6 +196,7 @@ const body = { ...p.body };
 if ($json.data && p.mediaKind) body[p.mediaKind] = { data: $json.data, mime: p.mediaMime || 'application/octet-stream', name: p.mediaName || 'file' };
 return { json: { phone: p.phone, body } };`);
   const ask = brainPost('Ask SwarmAI brain', '/api/channels/inbound', '={{ JSON.stringify($json.body) }}');
+  const hasReply = ifNotEmpty('Has reply?', '={{ $json.reply }}');
   const reply = node('Send reply', 'n8n-nodes-base.whatsApp', 1.1, {
     resource: 'message', operation: 'send', phoneNumberId: '={{ $env.WHATSAPP_PHONE_NUMBER_ID }}',
     recipientPhoneNumber: "={{ $('Build brain request').item.json.phone }}", messageType: 'text', textBody: '={{ $json.reply }}', additionalFields: {},
@@ -209,7 +212,7 @@ return { json: { phone: p.phone, body } };`);
     recipientPhoneNumber: "={{ $('Build brain request').item.json.phone }}", messageType: 'audio', mediaPath: 'useMedian8n', mediaPropertyName: 'data', additionalFields: {},
   }, { credentials: { whatsAppApi: CREDS.whatsapp } });
   writeFileSync(join(OUT, '02-whatsapp-channel.json'), JSON.stringify(workflow(IDS.whatsapp, 'SwarmAI – WhatsApp channel',
-    [trigger, parse, hasMedia, mediaUrl, download, toB64, build, ask, reply, hasVoice, pickVoice, asFile, sendVoice],
+    [trigger, parse, hasMedia, mediaUrl, download, toB64, build, ask, hasReply, reply, hasVoice, pickVoice, asFile, sendVoice],
     conn([
       ['WhatsApp Trigger', 'Parse messages'],
       ['Parse messages', 'Has media?'],
@@ -219,7 +222,8 @@ return { json: { phone: p.phone, body } };`);
       ['Download media', 'Media → base64'],
       ['Media → base64', 'Build brain request'],
       ['Build brain request', 'Ask SwarmAI brain'],
-      ['Ask SwarmAI brain', 'Send reply'],
+      ['Ask SwarmAI brain', 'Has reply?'],
+      ['Has reply?', 'Send reply', 0],
       ['Send reply', 'Voice reply?'],
       ['Voice reply?', 'Pick voice', 0],
       ['Pick voice', 'Voice reply → MP3'],

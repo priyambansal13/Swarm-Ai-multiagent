@@ -7,6 +7,7 @@ import type { SearchService } from '../../integrations/search.service.js';
 import type { WeatherService } from '../../integrations/weather.service.js';
 import type { WebReaderService } from '../../integrations/web-reader.service.js';
 import type { YatraService } from '../../integrations/yatra.service.js';
+import type { KnowledgeService } from '../../knowledge/knowledge.service.js';
 import type { RecordsService } from '../../records/records.service.js';
 
 export interface Services {
@@ -20,6 +21,7 @@ export interface Services {
   media: OpenAIMediaService;
   records: RecordsService;
   channels: N8nChannelsService;
+  knowledge: KnowledgeService;
 }
 
 const MAX = 7000;

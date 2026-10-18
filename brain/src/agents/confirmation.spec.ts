@@ -6,6 +6,7 @@ import { financeTools, recordsTools } from './tools/personal-tools.js';
 
 const ctx = (): RunContext => ({
   user: { id: 'u1', name: 'Priya', email: 'p@x.com', timezone: 'Asia/Kolkata', settings: {} } as any,
+  org: { id: 'o1', name: 'Org', settings: {} } as any, mode: 'personal', agents: [], kbSources: 0,
   runId: 'r', threadId: 't', channel: 'web', googleConnected: true, links: {}, attachments: [], facts: [], pending: [], emit: () => {},
 });
 const services = () => {

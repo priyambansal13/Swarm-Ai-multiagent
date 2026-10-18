@@ -5,7 +5,7 @@
   "isArchived": false,
   "nodes": [
     {
-      "id": "fff5efc4-d545-46ca-b368-6a28eb21a006",
+      "id": "5f9b10ea-14b6-4205-8a38-1ee4e8040c5e",
       "name": "WhatsApp Trigger",
       "type": "n8n-nodes-base.whatsAppTrigger",
       "typeVersion": 1,
@@ -25,10 +25,10 @@
           "name": "SwarmAI WhatsApp webhook (Meta app)"
         }
       },
-      "webhookId": "23eeb545-94d8-4604-9475-b07ee988903d"
+      "webhookId": "16c8a4a4-d19d-4be4-8bea-43459e2f4317"
     },
     {
-      "id": "c995167f-caa2-469b-9a32-36a70efb2926",
+      "id": "884319b3-9696-48e5-9a62-cafd1fc81d0d",
       "name": "Parse messages",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
@@ -38,11 +38,11 @@
       ],
       "parameters": {
         "mode": "runOnceForAllItems",
-        "jsCode": "// One item per incoming user message (status updates are ignored).\nconst out = [];\nfor (const item of $input.all()) {\n  const v = item.json;\n  const val = v.entry?.[0]?.changes?.[0]?.value ?? v;\n  const name = val.contacts?.[0]?.profile?.name ?? null;\n  for (const msg of val.messages ?? []) {\n    const media = msg.audio ?? msg.voice ?? msg.image ?? msg.document ?? null;\n    const kind = msg.audio || msg.voice ? 'audio' : msg.image ? 'image' : msg.document ? 'document' : null;\n    out.push({ json: {\n      phone: msg.from,\n      body: { channel: 'whatsapp', externalId: msg.from, displayName: name, messageId: msg.id,\n              text: msg.text?.body ?? msg.image?.caption ?? msg.document?.caption ?? msg.button?.text ?? msg.interactive?.button_reply?.title ?? null },\n      mediaId: media?.id ?? '', mediaKind: kind, mediaMime: media?.mime_type ?? null, mediaName: msg.document?.filename ?? kind,\n    } });\n  }\n}\nreturn out;"
+        "jsCode": "// One item per incoming user message (status updates are ignored).\nconst out = [];\nfor (const item of $input.all()) {\n  const v = item.json;\n  const val = v.entry?.[0]?.changes?.[0]?.value ?? v;\n  const name = val.contacts?.[0]?.profile?.name ?? null;\n  for (const msg of val.messages ?? []) {\n    const media = msg.audio ?? msg.voice ?? msg.image ?? msg.document ?? null;\n    const kind = msg.audio || msg.voice ? 'audio' : msg.image ? 'image' : msg.document ? 'document' : null;\n    out.push({ json: {\n      phone: msg.from,\n      body: { channel: 'whatsapp', externalId: msg.from, to: val.metadata?.phone_number_id ?? null, displayName: name, messageId: msg.id,\n              text: msg.text?.body ?? msg.image?.caption ?? msg.document?.caption ?? msg.button?.text ?? msg.interactive?.button_reply?.title ?? null },\n      mediaId: media?.id ?? '', mediaKind: kind, mediaMime: media?.mime_type ?? null, mediaName: msg.document?.filename ?? kind,\n    } });\n  }\n}\nreturn out;"
       }
     },
     {
-      "id": "5dd0d05e-44ed-4186-876d-0276141f8c5d",
+      "id": "e5744742-40ac-4b7d-a5cd-897280e5cdf3",
       "name": "Has media?",
       "type": "n8n-nodes-base.if",
       "typeVersion": 2.2,
@@ -60,7 +60,7 @@
           },
           "conditions": [
             {
-              "id": "de98110e-5201-468f-b183-a83520b65fd4",
+              "id": "c8e1dddc-d4c0-4b55-8600-c8ff6863bccc",
               "leftValue": "={{ $json.mediaId }}",
               "rightValue": "",
               "operator": {
@@ -76,7 +76,7 @@
       }
     },
     {
-      "id": "97cd8200-eb31-4ccb-988e-04de3c0159a2",
+      "id": "453cdd76-a5b8-4b3c-820f-240881ce8778",
       "name": "Get media URL",
       "type": "n8n-nodes-base.whatsApp",
       "typeVersion": 1.1,
@@ -97,7 +97,7 @@
       }
     },
     {
-      "id": "fa50d248-5324-45b8-8adf-59bf62ede54a",
+      "id": "8d25b9a0-82f2-4c24-805d-b4db08f431ce",
       "name": "Download media",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
@@ -127,7 +127,7 @@
       }
     },
     {
-      "id": "94f057a1-3ed0-4aff-839c-58def927ed3b",
+      "id": "4f3b9530-700f-49ac-b290-7e9e3ea3ee90",
       "name": "Media → base64",
       "type": "n8n-nodes-base.extractFromFile",
       "typeVersion": 1.1,
@@ -143,7 +143,7 @@
       }
     },
     {
-      "id": "45f12604-783d-4802-82b7-c7fe74e452d5",
+      "id": "522f44d3-8d94-4724-9d5a-4e61a13d58fe",
       "name": "Build brain request",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
@@ -157,7 +157,7 @@
       }
     },
     {
-      "id": "a545edcd-71e9-4a7e-b74d-b34ccdb45c49",
+      "id": "8256e956-129c-4e47-80ec-604fea5e5ff3",
       "name": "Ask SwarmAI brain",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
@@ -186,12 +186,46 @@
       }
     },
     {
-      "id": "04a7cb79-bc2a-4d84-96b2-1e68c8385bc8",
+      "id": "e3bfce2d-4993-4b08-bcce-05ea0f4af124",
+      "name": "Has reply?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        2160,
+        300
+      ],
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "loose",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "b9fefa28-8bcd-47ef-8a9e-79d8d41ce1bf",
+              "leftValue": "={{ $json.reply }}",
+              "rightValue": "",
+              "operator": {
+                "type": "string",
+                "operation": "notEmpty",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      }
+    },
+    {
+      "id": "2439670e-1b43-420a-b703-162a5701c9e4",
       "name": "Send reply",
       "type": "n8n-nodes-base.whatsApp",
       "typeVersion": 1.1,
       "position": [
-        2160,
+        2400,
         300
       ],
       "parameters": {
@@ -211,12 +245,12 @@
       }
     },
     {
-      "id": "6b38d7c2-9e1f-480a-95aa-6ca965552936",
+      "id": "52eb69dd-e1cf-4afc-ae4d-0c4468f7363c",
       "name": "Voice reply?",
       "type": "n8n-nodes-base.if",
       "typeVersion": 2.2,
       "position": [
-        2400,
+        2640,
         300
       ],
       "parameters": {
@@ -229,7 +263,7 @@
           },
           "conditions": [
             {
-              "id": "ba72ba01-7f8c-4110-9b48-c26a4bd06935",
+              "id": "fad983d8-d6b6-4392-89b9-b694e371e78d",
               "leftValue": "={{ $('Ask SwarmAI brain').item.json.voice }}",
               "rightValue": "",
               "operator": {
@@ -245,12 +279,12 @@
       }
     },
     {
-      "id": "e8e3a8b4-eccb-4291-94fe-637995d211d1",
+      "id": "b5bbf6cc-1430-4c8c-bdfe-1979fbff65d4",
       "name": "Pick voice",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        2640,
+        2880,
         300
       ],
       "parameters": {
@@ -259,12 +293,12 @@
       }
     },
     {
-      "id": "bfd5b668-e85c-4043-8522-b7d11acac8b0",
+      "id": "86b03686-b177-4973-a51b-a4460dbd2e4f",
       "name": "Voice reply → MP3",
       "type": "n8n-nodes-base.convertToFile",
       "typeVersion": 1.1,
       "position": [
-        2880,
+        3120,
         300
       ],
       "parameters": {
@@ -279,12 +313,12 @@
       }
     },
     {
-      "id": "18ab14d3-bfc2-4c2c-88b0-da607df920cb",
+      "id": "7f306d17-e1b2-42e5-87a2-cc86302d4b05",
       "name": "Send voice reply",
       "type": "n8n-nodes-base.whatsApp",
       "typeVersion": 1.1,
       "position": [
-        3120,
+        3360,
         300
       ],
       "parameters": {
@@ -391,6 +425,17 @@
       ]
     },
     "Ask SwarmAI brain": {
+      "main": [
+        [
+          {
+            "node": "Has reply?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Has reply?": {
       "main": [
         [
           {

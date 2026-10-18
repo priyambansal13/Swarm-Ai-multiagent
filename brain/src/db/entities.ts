@@ -28,9 +28,87 @@ export const DEFAULT_SETTINGS: UserSettings = {
   meetingPrepEnabled: true,
 };
 
+// ------------------------------------------------------------------ organisations (multi-tenancy)
+
+export type OrgRole = 'owner' | 'admin' | 'agent' | 'member';
+export const STAFF_ROLES: OrgRole[] = ['owner', 'admin', 'agent'];
+export const ADMIN_ROLES: OrgRole[] = ['owner', 'admin'];
+
+/** Customer desk: unknown senders on the org's WhatsApp/Telegram talk to the org's bot, with human handoff. */
+export interface DeskSettings {
+  enabled: boolean;
+  channels: LinkedChannel[];
+  /** Meta phone_number_id this org answers on (blank = any number of this server) */
+  whatsappPhoneNumberId: string | null;
+  /** Business context for the customer-facing assistant ("We are Acme Dental, Pune…") */
+  instructions: string;
+  greeting: string;
+  /** Hand over to a person when the knowledge base has no answer */
+  escalateWhenUnsure: boolean;
+  /** Sent to the customer when a person takes over */
+  handoffMessage: string;
+}
+
+export interface OrgSettings {
+  assistantName: string;
+  accentColor: string | null;
+  timezone: string;
+  /** Chat models for this org (blank = server defaults) */
+  model: string | null;
+  modelFast: string | null;
+  /** AES-GCM encrypted OpenAI key of the org (blank = server key) */
+  openaiKeyEnc: string | null;
+  desk: DeskSettings;
+}
+
+export const DEFAULT_DESK: DeskSettings = {
+  enabled: false,
+  channels: ['whatsapp', 'telegram'],
+  whatsappPhoneNumberId: null,
+  instructions: '',
+  greeting: '',
+  escalateWhenUnsure: true,
+  handoffMessage: "I've passed this to our team — a person will reply here shortly.",
+};
+
+export const DEFAULT_ORG_SETTINGS: OrgSettings = {
+  assistantName: 'SwarmAI',
+  accentColor: null,
+  timezone: 'Asia/Kolkata',
+  model: null,
+  modelFast: null,
+  openaiKeyEnc: null,
+  desk: DEFAULT_DESK,
+};
+
+@Entity('organizations')
+export class Organization {
+  @PrimaryGeneratedColumn('uuid') id: string;
+  @Column({ type: 'varchar' }) name: string;
+  @Index({ unique: true }) @Column({ type: 'varchar' }) slug: string;
+  @Column({ type: 'jsonb', default: () => `'${JSON.stringify(DEFAULT_ORG_SETTINGS).replace(/'/g, "''")}'` }) settings: OrgSettings;
+  @CreateDateColumn({ type: 'timestamptz' }) createdAt: Date;
+}
+
+/** One-time invitation to join an organisation with a role. */
+@Entity('org_invites')
+export class OrgInvite {
+  @PrimaryColumn({ type: 'varchar' }) code: string;
+  @Index() @Column({ type: 'uuid' }) orgId: string;
+  @Column({ type: 'varchar' }) role: OrgRole;
+  @Column({ type: 'varchar', nullable: true }) email: string | null;
+  @Column({ type: 'uuid' }) createdBy: string;
+  @Column({ type: 'timestamptz' }) expiresAt: Date;
+  @Column({ type: 'timestamptz', nullable: true }) usedAt: Date | null;
+  @CreateDateColumn({ type: 'timestamptz' }) createdAt: Date;
+}
+
 @Entity('users')
 export class User {
   @PrimaryGeneratedColumn('uuid') id: string;
+  /** Each user belongs to one organisation; personal data stays scoped by userId, shared data by orgId. */
+  @Index() @Column({ type: 'uuid', nullable: true }) orgId: string;
+  @Column({ type: 'varchar', default: 'owner' }) role: OrgRole;
   @Index({ unique: true }) @Column({ type: 'varchar' }) email: string;
   @Column({ type: 'varchar' }) name: string;
   @Column({ type: 'varchar' }) passwordHash: string;
@@ -229,7 +307,92 @@ export class AutomationState {
   @Column({ type: 'jsonb', default: () => "'{}'" }) data: Record<string, any>;
 }
 
+// ------------------------------------------------------------------ config-driven agents
+
+export type AgentAudience = 'staff' | 'customer' | 'both';
+
+/**
+ * Per-org agent registry row. For a built-in agent it overrides the code defaults (null = keep default);
+ * a custom agent is defined entirely here, using tools from the shared tool catalogue.
+ */
+@Entity('agent_configs')
+@Index(['orgId', 'agentId'], { unique: true })
+export class AgentConfig {
+  @PrimaryGeneratedColumn('uuid') id: string;
+  @Column({ type: 'uuid' }) orgId: string;
+  @Column({ type: 'varchar' }) agentId: string;
+  @Column({ type: 'varchar', default: 'builtin' }) kind: 'builtin' | 'custom';
+  @Column({ type: 'boolean', default: true }) enabled: boolean;
+  @Column({ type: 'varchar', nullable: true }) label: string | null;
+  @Column({ type: 'text', nullable: true }) description: string | null;
+  /** Replaces the agent's prompt (custom agents: required) */
+  @Column({ type: 'text', nullable: true }) prompt: string | null;
+  /** Appended to the prompt — the safe way to tune a built-in agent */
+  @Column({ type: 'text', default: '' }) extraInstructions: string;
+  @Column({ type: 'varchar', nullable: true }) model: string | null;
+  /** Tool names from the catalogue (null = the built-in agent's own tools) */
+  @Column({ type: 'jsonb', nullable: true }) tools: string[] | null;
+  /** Extra tools that must be approved by the user before they run */
+  @Column({ type: 'jsonb', default: () => "'[]'" }) approvalTools: string[];
+  @Column({ type: 'varchar', nullable: true }) audience: AgentAudience | null;
+  @UpdateDateColumn({ type: 'timestamptz' }) updatedAt: Date;
+}
+
+// ------------------------------------------------------------------ knowledge base (chunks + vectors live in kb_chunks, raw SQL)
+
+@Entity('kb_sources')
+export class KbSource {
+  @PrimaryGeneratedColumn('uuid') id: string;
+  @Index() @Column({ type: 'uuid' }) orgId: string;
+  @Column({ type: 'varchar' }) name: string;
+  @Column({ type: 'varchar' }) type: 'file' | 'url' | 'text';
+  @Column({ type: 'text', nullable: true }) url: string | null;
+  @Column({ type: 'varchar', nullable: true }) mime: string | null;
+  @Column({ type: 'varchar', default: 'processing' }) status: 'processing' | 'ready' | 'error';
+  @Column({ type: 'text', nullable: true }) error: string | null;
+  @Column({ type: 'int', default: 0 }) chunks: number;
+  @Column({ type: 'int', default: 0 }) chars: number;
+  @Column({ type: 'uuid' }) createdBy: string;
+  @CreateDateColumn({ type: 'timestamptz' }) createdAt: Date;
+  @Column({ type: 'timestamptz', nullable: true }) syncedAt: Date | null;
+}
+
+// ------------------------------------------------------------------ customer desk (human handoff)
+
+export type ConversationStatus = 'bot' | 'waiting' | 'human' | 'closed';
+
+/** A customer chatting with an organisation's WhatsApp/Telegram desk. */
+@Entity('conversations')
+@Index(['orgId', 'channel', 'externalId'], { unique: true })
+export class Conversation {
+  @PrimaryGeneratedColumn('uuid') id: string;
+  @Index() @Column({ type: 'uuid' }) orgId: string;
+  /** 'web' = the admin console's "test as a customer" simulator */
+  @Column({ type: 'varchar' }) channel: Channel;
+  @Column({ type: 'varchar' }) externalId: string;
+  @Column({ type: 'varchar', nullable: true }) displayName: string | null;
+  @Index() @Column({ type: 'varchar', default: 'bot' }) status: ConversationStatus;
+  @Column({ type: 'uuid', nullable: true }) assignedTo: string | null;
+  @Column({ type: 'text', nullable: true }) reason: string | null;
+  @Column({ type: 'text', nullable: true }) summary: string | null;
+  @Column({ type: 'int', default: 0 }) unread: number;
+  @Column({ type: 'timestamptz', default: () => 'now()' }) lastMessageAt: Date;
+  @CreateDateColumn({ type: 'timestamptz' }) createdAt: Date;
+}
+
+@Entity('conversation_messages')
+export class ConversationMessage {
+  @PrimaryGeneratedColumn('uuid') id: string;
+  @Index() @Column({ type: 'uuid' }) conversationId: string;
+  @Column({ type: 'varchar' }) role: 'customer' | 'bot' | 'staff' | 'system';
+  @Column({ type: 'uuid', nullable: true }) authorId: string | null;
+  @Column({ type: 'varchar', nullable: true }) authorName: string | null;
+  @Column({ type: 'text' }) text: string;
+  @CreateDateColumn({ type: 'timestamptz' }) createdAt: Date;
+}
+
 export const ENTITIES = [
+  Organization, OrgInvite, AgentConfig, KbSource, Conversation, ConversationMessage,
   User, ChannelLink, LinkCode, GoogleAccount, Thread, Note, ProfileFact, Task, Reminder, Expense, Contact,
   TravelLogEntry, EmailDigestEntry, PriceWatch, Activity, OutboxMessage, AutomationState,
 ];

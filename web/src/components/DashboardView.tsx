@@ -18,7 +18,7 @@ const Panel = ({ title, icon: Icon, children, action }: { title: string; icon: R
   </section>
 );
 
-const KIND_LABEL: Record<string, string> = { brief: 'Morning brief', reminder: 'Reminder', triage: 'Inbox', meeting_prep: 'Meeting prep', followups: 'Follow-ups', price_drop: 'Price drop', weekly_review: 'Weekly review' };
+const KIND_LABEL: Record<string, string> = { brief: 'Morning brief', reminder: 'Reminder', triage: 'Inbox', meeting_prep: 'Meeting prep', followups: 'Follow-ups', price_drop: 'Price drop', weekly_review: 'Weekly review', handoff: 'Customer handoff' };
 
 export function DashboardView() {
   const { me } = useAuth();

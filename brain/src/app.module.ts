@@ -2,6 +2,12 @@ import { Module } from '@nestjs/common';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { ActionExecutor } from './agents/actions.js';
+import { AgentRegistryService } from './agents/registry.service.js';
+import { AdminController } from './admin/admin.controller.js';
+import { DeskController } from './desk/desk.controller.js';
+import { DeskService } from './desk/desk.service.js';
+import { KnowledgeService } from './knowledge/knowledge.service.js';
+import { OrgService } from './orgs/org.service.js';
 import { SwarmGraphService } from './agents/graph.service.js';
 import { AguiController } from './agui/agui.controller.js';
 import { AuthController } from './auth/auth.controller.js';
@@ -47,10 +53,10 @@ import { VoiceController } from './voice/voice.controller.js';
   ],
   controllers: [
     AuthController, GoogleController, ChatController, AguiController, RecordsController, VoiceController,
-    ChannelsController, AutomationsController, HealthController,
+    ChannelsController, AutomationsController, HealthController, AdminController, DeskController,
   ],
   providers: [
-    AuthService, AuthGuard, N8nGuard,
+    OrgService, AuthService, AuthGuard, N8nGuard, KnowledgeService, AgentRegistryService, DeskService,
     GoogleAuthService, GmailService, CalendarService, SheetsService,
     OpenAIMediaService, SearchService, WebReaderService, WeatherService, ImdWarningsService, YatraService, N8nChannelsService,
     RecordsService, ActionExecutor, SwarmGraphService, ChatService, ChannelsService, AutomationsService,

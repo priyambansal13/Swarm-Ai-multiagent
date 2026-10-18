@@ -8,6 +8,9 @@ import { Channel, ChannelLink, Thread, User } from '../db/entities.js';
 import { GoogleAuthService } from '../google/google-auth.service.js';
 import type { Attachment } from '../integrations/openai-media.service.js';
 import { RecordsService } from '../records/records.service.js';
+import { AgentRegistryService } from '../agents/registry.service.js';
+import { KnowledgeService } from '../knowledge/knowledge.service.js';
+import { OrgService } from '../orgs/org.service.js';
 
 export { RunCancelledError };
 
@@ -30,6 +33,9 @@ export class ChatService {
     private readonly google: GoogleAuthService,
     private readonly records: RecordsService,
     private readonly graph: SwarmGraphService,
+    private readonly orgs: OrgService,
+    private readonly registry: AgentRegistryService,
+    private readonly knowledge: KnowledgeService,
   ) {}
 
   isRunning(threadId: string) {
@@ -47,13 +53,17 @@ export class ChatService {
   }
 
   private async context(user: User, thread: Thread, attachments: Attachment[], emit: Emit, signal: AbortSignal): Promise<RunContext> {
-    const [links, facts, google] = await Promise.all([
+    const [links, facts, google, org, agents, kbSources] = await Promise.all([
       this.links.find({ where: { userId: user.id } }),
       this.records.listFacts(user.id),
       this.google.account(user.id),
+      this.orgs.get(user.orgId),
+      this.registry.forRun(user.orgId, 'personal'),
+      this.knowledge.countReady(user.orgId),
     ]);
     return {
-      user, runId: randomUUID(), threadId: thread.id, channel: thread.channel,
+      user, org, mode: 'personal', agents, apiKey: this.orgs.apiKey(org), kbSources,
+      runId: randomUUID(), threadId: thread.id, channel: thread.channel,
       googleConnected: !!google && this.google.configured,
       links: Object.fromEntries(links.map((l) => [l.channel, l.externalId])),
       attachments, facts: facts.map((f) => f.fact), pending: [], emit, signal,

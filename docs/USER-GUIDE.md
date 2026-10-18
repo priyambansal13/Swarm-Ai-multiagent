@@ -104,6 +104,8 @@ Turn these on/off, change the brief time, timezone, notify channel (Telegram / W
 - **Chat** — conversations, live agent activity, approval cards, push-to-talk, stop button
 - **Dashboard** — tasks, upcoming reminders, recent expenses, activity, run automations now
 - **Memory** — notes and remembered facts (delete any item)
+- **Inbox** (owner/admin/agent) — customer chats handed over by the bot; reply, take over, hand back, close
+- **Admin** (owner/admin) — overview, organisation & branding, members, agents, knowledge, customer desk, approvals, audit log
 - **Settings** — profile, timezone, notify channel, automations, Connect/Disconnect Google, Link/Unlink Telegram &
   WhatsApp
 
@@ -116,6 +118,21 @@ Turn these on/off, change the brief time, timezone, notify channel (Telegram / W
 | TravelLog | you log trips |
 | EmailDigest | inbox triage / briefs summarise mail |
 | ActivityLog | every approved action (audit trail) |
+
+## Your organisation (team, admin console, customer desk)
+
+Details: [PLATFORM.md](PLATFORM.md).
+- **Roles:** owner / admin see **Admin**; owner / admin / agent see **Inbox**; members just have their own assistant.
+  Invite people from Admin → Members (single-use link, 7 days).
+- **Admin → Agents:** switch agents on/off, add *extra instructions* ("always reply in Hindi"), change the model, tick
+  tools that must be **approved** before they run, create **custom agents**, or apply an **industry pack** (Admin →
+  Organisation).
+- **Admin → Knowledge:** upload PDFs / Word files, add web pages or paste text. Then ask *"What is our refund policy?"* —
+  the Knowledge agent answers with the source and page.
+- **Customer desk:** turn it on in Admin → Customer desk. People who message your WhatsApp/Telegram without being members
+  chat with your assistant (answers from the knowledge base). When it can't answer, the customer asks for a person, or
+  it's a refund/complaint, the chat moves to **Inbox → Needs a person** and you get an alert. Reply there (it goes to
+  the customer's WhatsApp/Telegram), then **Hand back to bot**. Try it first with **Test as a customer**.
 
 ## For developers
 - API + Swagger: http://localhost:4200/api/docs (also AG-UI streaming at `POST /api/agui`)

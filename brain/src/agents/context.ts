@@ -1,6 +1,7 @@
 import { randomUUID } from 'node:crypto';
-import type { Channel, User } from '../db/entities.js';
+import type { Channel, Organization, User } from '../db/entities.js';
 import type { Attachment } from '../integrations/openai-media.service.js';
+import type { ResolvedAgent } from './registry.service.js';
 
 /** Progress events streamed to UIs (AG-UI steps/tool calls) and stored in run traces. */
 export type AgentEvent =
@@ -12,7 +13,9 @@ export type Emit = (e: AgentEvent) => void;
 export type ActionKind =
   | 'gmail_send' | 'gmail_reply' | 'gmail_archive'
   | 'calendar_create' | 'calendar_update' | 'calendar_delete'
-  | 'task_delete' | 'expense_from_receipt';
+  | 'task_delete' | 'expense_from_receipt'
+  /** Any catalogue tool an org marked "needs approval" (args: { tool, input }) */
+  | 'tool_call';
 
 export interface PendingAction {
   id: string;
@@ -23,9 +26,23 @@ export interface PendingAction {
   args: Record<string, any>;
 }
 
-/** Everything an agent run needs; built per run so tools are scoped to one user. */
+/** personal = a member using their assistant; customer = an outside person on the org's customer desk. */
+export type RunMode = 'personal' | 'customer';
+
+/** Everything an agent run needs; built per run so tools are scoped to one user (and one organisation). */
 export interface RunContext {
+  /** In customer mode a stand-in user (no personal data) named after the customer */
   user: User;
+  org: Organization;
+  mode: RunMode;
+  /** Agents available in this run (registry: code defaults + the org's configuration) */
+  agents: ResolvedAgent[];
+  /** The org's own OpenAI key, if it has one */
+  apiKey?: string;
+  /** Ready knowledge-base sources of the org */
+  kbSources: number;
+  /** Customer desk: set when the bot hands the conversation to a person */
+  escalation?: { reason: string; summary: string } | null;
   runId: string;
   threadId: string;
   channel: Channel;

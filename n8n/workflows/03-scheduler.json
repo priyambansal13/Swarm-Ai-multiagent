@@ -5,7 +5,7 @@
   "isArchived": false,
   "nodes": [
     {
-      "id": "07fd458a-10e4-4c56-8527-672667f4d0f5",
+      "id": "f2d53283-0e2a-4b21-b51c-9e71aa9665e8",
       "name": "Every minute",
       "type": "n8n-nodes-base.scheduleTrigger",
       "typeVersion": 1.2,
@@ -25,7 +25,7 @@
       }
     },
     {
-      "id": "cc33b099-1e0e-4cc9-b6c0-eb1e704a8f95",
+      "id": "fd5fd536-46fd-457c-bad9-97b311f12476",
       "name": "Tick brain",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
@@ -54,7 +54,7 @@
       }
     },
     {
-      "id": "69f90918-1765-4de3-8bdb-e64833deba38",
+      "id": "29983d2d-3cb2-4a45-819e-fd2f5e3b6b85",
       "name": "One item per message",
       "type": "n8n-nodes-base.splitOut",
       "typeVersion": 1,
@@ -68,7 +68,7 @@
       }
     },
     {
-      "id": "fb357701-6388-4b03-bacd-75ff25209d8d",
+      "id": "39c0c9ff-a18b-4243-a880-788a3cbd16fb",
       "name": "Telegram?",
       "type": "n8n-nodes-base.if",
       "typeVersion": 2.2,
@@ -86,7 +86,7 @@
           },
           "conditions": [
             {
-              "id": "ac372e61-ec19-426d-827a-fe28700c7f4f",
+              "id": "f54ae8ed-6264-4aa4-8102-a1f5267c0da2",
               "leftValue": "={{ $json.channel }}",
               "rightValue": "telegram",
               "operator": {
@@ -101,7 +101,7 @@
       }
     },
     {
-      "id": "03a84172-a43a-49b6-b733-1da3d6599bd3",
+      "id": "6b1aeae5-4d21-48b7-985a-1975a544d940",
       "name": "Send on Telegram",
       "type": "n8n-nodes-base.telegram",
       "typeVersion": 1.2,
@@ -128,7 +128,7 @@
       "onError": "continueErrorOutput"
     },
     {
-      "id": "10c99ff8-fd37-4612-ac3a-eeb4f4db47af",
+      "id": "4b3c764c-9fd2-4e5c-8531-26578921312f",
       "name": "Send on WhatsApp",
       "type": "n8n-nodes-base.whatsApp",
       "typeVersion": 1.1,
@@ -154,7 +154,7 @@
       "onError": "continueErrorOutput"
     },
     {
-      "id": "68f8b579-8512-45b6-8e86-52320054bf7f",
+      "id": "9a0fb87b-c782-4b39-9277-c518d1fb67b6",
       "name": "Ack delivered",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
@@ -183,7 +183,7 @@
       }
     },
     {
-      "id": "02bc213b-f85b-437a-bc00-70129fd2874e",
+      "id": "1a4ed455-7543-413d-b905-ba68e640eee2",
       "name": "Ack failed",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,

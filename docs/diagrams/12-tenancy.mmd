@@ -1,0 +1,21 @@
+flowchart TB
+  subgraph ORG["Organisation (one per client) — name, assistant name, colour, models, own OpenAI key"]
+    direction TB
+    M["<b>Members & roles</b><br/>owner · admin · agent · member<br/>invite links"]
+    AG["<b>Agent registry</b><br/>built-in agents on/off, extra instructions,<br/>model, tools, approval rules, custom agents"]
+    KB["<b>Knowledge base</b><br/>documents & pages of this organisation"]
+    DK["<b>Customer desk</b><br/>WhatsApp / Telegram bot for customers<br/>+ staff Inbox"]
+  end
+  P["<b>Each member's private assistant</b><br/>own Gmail, Calendar, tasks, notes, memory"]
+  ADM["<b>Admin console</b><br/>overview · organisation · members · agents<br/>knowledge · customer desk · approvals · audit log"]
+  ADM --> ORG
+  M --> P
+  AG --> P
+  AG --> DK
+  KB --> P
+  KB --> DK
+
+  classDef you fill:#FEF3C7,stroke:#D97706,color:#111;
+  classDef brain fill:#DBEAFE,stroke:#2563EB,color:#111;
+  classDef data fill:#DCFCE7,stroke:#16A34A,color:#111;
+  class ADM you; class M,AG,DK brain; class KB,P data;

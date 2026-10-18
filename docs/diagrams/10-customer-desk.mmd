@@ -1,0 +1,27 @@
+sequenceDiagram
+  autonumber
+  actor C as Customer (phone)
+  participant N as n8n
+  participant B as Brain · customer desk
+  participant K as Knowledge base
+  actor S as Staff (Inbox)
+
+  C->>N: "Do you treat kids? My son has a toothache"
+  N->>B: message from an unknown number
+  B->>B: not a member → the organisation's desk bot
+  B->>K: search the documents
+  K-->>B: nothing about children
+  B-->>N: "I've passed this to our team…"
+  N-->>C: reply
+  B-)S: 🙋 alert on phone + red badge in Inbox (with a summary)
+  C->>N: "hello?"
+  N->>B: message
+  B-->>N: (stays quiet — a person is on it)
+  S->>B: reply typed in the Inbox
+  B->>N: send on the same WhatsApp chat
+  N-->>C: "Yes — Dr Shah sees children, come at 5 pm"
+  S->>B: Hand back to bot
+  C->>N: next question
+  N->>B: message
+  B-->>N: bot answers again (it knows what staff said)
+  N-->>C: reply

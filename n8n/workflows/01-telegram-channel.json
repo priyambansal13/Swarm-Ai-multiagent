@@ -5,7 +5,7 @@
   "isArchived": false,
   "nodes": [
     {
-      "id": "c3b46b89-2fa1-4723-829c-b3aa29b290b0",
+      "id": "876f625d-92e6-4765-9bf7-a0bef509e37f",
       "name": "Telegram Trigger",
       "type": "n8n-nodes-base.telegramTrigger",
       "typeVersion": 1.2,
@@ -27,10 +27,10 @@
           "name": "SwarmAI Telegram bot"
         }
       },
-      "webhookId": "ac7f9508-6919-458a-bf0b-5c1703d66965"
+      "webhookId": "1a1b72ac-ce22-4ade-8fef-b5838aa406f9"
     },
     {
-      "id": "68ad534c-ad58-4e91-b3d9-92b29d4b3555",
+      "id": "d2489897-75fe-443c-8183-80de04dfe7a5",
       "name": "Has attachment?",
       "type": "n8n-nodes-base.if",
       "typeVersion": 2.2,
@@ -48,7 +48,7 @@
           },
           "conditions": [
             {
-              "id": "5b67234d-4096-4d21-80b2-92c6d4e2f4ab",
+              "id": "840c05e0-b02a-48dc-92e2-1077135d3b50",
               "leftValue": "={{ $binary.data ? 'yes' : '' }}",
               "rightValue": "",
               "operator": {
@@ -64,7 +64,7 @@
       }
     },
     {
-      "id": "f41153bd-f261-4826-85d5-31fe42f9b701",
+      "id": "80b54424-1a95-40cf-9862-e04904bd96d7",
       "name": "Attachment → base64",
       "type": "n8n-nodes-base.extractFromFile",
       "typeVersion": 1.1,
@@ -80,7 +80,7 @@
       }
     },
     {
-      "id": "be082429-28f1-4b6c-afbb-5a566c7ca9d6",
+      "id": "1c675980-550c-4a28-b287-5181058cfa77",
       "name": "Build brain request",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
@@ -94,7 +94,7 @@
       }
     },
     {
-      "id": "32c7492b-83fb-473f-9a2b-44dacccdc3e1",
+      "id": "9073bd67-14b7-426d-8901-65f63f8a8ea8",
       "name": "Ask SwarmAI brain",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
@@ -123,12 +123,46 @@
       }
     },
     {
-      "id": "f7dea719-0125-460f-8900-3a27349ef775",
+      "id": "8faaee9b-b4f6-4e3b-a896-f40934528dac",
+      "name": "Has reply?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        1440,
+        300
+      ],
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "loose",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "c65d3dfc-9180-4926-80a4-eebb58fce46d",
+              "leftValue": "={{ $json.reply }}",
+              "rightValue": "",
+              "operator": {
+                "type": "string",
+                "operation": "notEmpty",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      }
+    },
+    {
+      "id": "f657ebae-9cbc-4664-8ded-521d411f12ad",
       "name": "Send reply",
       "type": "n8n-nodes-base.telegram",
       "typeVersion": 1.2,
       "position": [
-        1440,
+        1680,
         300
       ],
       "parameters": {
@@ -149,12 +183,12 @@
       }
     },
     {
-      "id": "5cb0db6f-5b98-47d2-80ae-e46aa823ddc6",
+      "id": "d5a9cd19-9e23-44c7-9a7e-dd4b4b5ee9e1",
       "name": "Voice reply?",
       "type": "n8n-nodes-base.if",
       "typeVersion": 2.2,
       "position": [
-        1680,
+        1920,
         300
       ],
       "parameters": {
@@ -167,7 +201,7 @@
           },
           "conditions": [
             {
-              "id": "029cb1bf-e390-4765-a68a-8b896fcebc1d",
+              "id": "d7ea950f-7c21-4f5d-bd43-dd4812ebf9a0",
               "leftValue": "={{ $('Ask SwarmAI brain').item.json.voice }}",
               "rightValue": "",
               "operator": {
@@ -183,12 +217,12 @@
       }
     },
     {
-      "id": "a83fce6d-d1e3-4e53-a68d-430fa07bf55f",
+      "id": "6f247dbf-0791-4bee-bfa2-4a22a1f573f0",
       "name": "Pick voice",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        2160,
+        2400,
         300
       ],
       "parameters": {
@@ -197,12 +231,12 @@
       }
     },
     {
-      "id": "367b86ea-aaac-497c-be9d-751ffa182375",
+      "id": "be2ea7ed-195c-4d02-b4ad-739846e8c81f",
       "name": "Voice reply → MP3",
       "type": "n8n-nodes-base.convertToFile",
       "typeVersion": 1.1,
       "position": [
-        1920,
+        2160,
         300
       ],
       "parameters": {
@@ -217,12 +251,12 @@
       }
     },
     {
-      "id": "5d645d23-82e7-4c11-9b1c-966834b19007",
+      "id": "b1134be3-495c-41bc-be1c-987c8474babf",
       "name": "Send voice reply",
       "type": "n8n-nodes-base.telegram",
       "typeVersion": 1.2,
       "position": [
-        2400,
+        2640,
         300
       ],
       "parameters": {
@@ -298,6 +332,17 @@
       ]
     },
     "Ask SwarmAI brain": {
+      "main": [
+        [
+          {
+            "node": "Has reply?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Has reply?": {
       "main": [
         [
           {

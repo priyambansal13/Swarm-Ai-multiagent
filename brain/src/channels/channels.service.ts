@@ -8,11 +8,15 @@ import { ChannelLink, LinkCode, LinkedChannel, User } from '../db/entities.js';
 import { OpenAIMediaService } from '../integrations/openai-media.service.js';
 import { RecordsService } from '../records/records.service.js';
 import { ChatService, RunCancelledError } from '../chat/chat.service.js';
+import { DeskService } from '../desk/desk.service.js';
+import type { Attachment } from '../integrations/openai-media.service.js';
 
 const Media = z.object({ data: z.string(), mime: z.string(), name: z.string().optional() });
 export const InboundSchema = z.object({
   channel: z.enum(['telegram', 'whatsapp']),
   externalId: z.string().min(3).max(64),
+  /** Receiving number/bot (WhatsApp phone_number_id) — picks the organisation's customer desk */
+  to: z.string().max(64).nullish(),
   displayName: z.string().max(120).nullish(),
   messageId: z.string().nullish(),
   text: z.string().max(4000).nullish(),
@@ -34,7 +38,8 @@ const NO = /^\s*(no|n|nope|cancel|stop|reject|don'?t|nahi|nahin|mat karo|👎|�
 
 /**
  * Inbound messages from n8n (one Telegram bot / one WhatsApp number for all users).
- * Unknown chats must link with a one-time code generated in the web app.
+ * Linked chats talk to their member's personal assistant. Other senders reach the customer desk of the
+ * organisation that enabled it for this channel/number; without one they are asked to link with a code.
  */
 @Injectable()
 export class ChannelsService {
@@ -48,6 +53,7 @@ export class ChannelsService {
     private readonly chat: ChatService,
     private readonly media: OpenAIMediaService,
     private readonly records: RecordsService,
+    private readonly desk: DeskService,
   ) {}
 
   async createLinkCode(user: User, channel: LinkedChannel) {
@@ -95,24 +101,17 @@ export class ChannelsService {
 
     const link = await this.links.findOne({ where: { channel: msg.channel, externalId: msg.externalId } });
     if (!link) {
+      const org = await this.desk.orgFor(msg.channel, msg.to);
+      if (org) return this.customer(org, msg);
       const web = this.config.get('WEB_URL') ?? 'http://localhost:3200';
       return { reply: `👋 This is SwarmAI, a personal assistant. To use it, sign in at ${web}, open Settings → Link ${msg.channel === 'telegram' ? 'Telegram' : 'WhatsApp'}, and send the code here.`, voice: null, userId: null };
     }
     const user = await this.users.findOneByOrFail({ id: link.userId });
     const threadId = `${msg.channel}-${user.id}`;
 
-    let text = msg.text?.trim() ?? '';
-    const isVoice = !!msg.audio;
-    if (msg.audio) {
-      try {
-        text = await this.media.transcribe(Buffer.from(msg.audio.data, 'base64'), msg.audio.mime);
-      } catch (e) {
-        return { reply: `⚠️ I couldn't understand that voice note (${(e as Error).message}).`, voice: null, userId: user.id };
-      }
-    }
-    const attachments = [msg.image, msg.document].filter(Boolean).map((a, i) => ({ name: a!.name ?? `attachment-${i + 1}`, mime: a!.mime, data: a!.data }));
-    if (!text && attachments.length) text = 'Please look at the attachment.';
-    if (!text) return { reply: 'Send me a message, a voice note or a photo.', voice: null, userId: user.id };
+    const prepared = await this.prepare(msg);
+    if ('error' in prepared) return { reply: prepared.error, voice: null, userId: user.id };
+    const { text, isVoice, attachments } = prepared;
 
     if (this.chat.isRunning(threadId)) return { reply: '⏳ Still working on your previous request…', voice: null, userId: user.id };
 
@@ -130,14 +129,42 @@ export class ChannelsService {
     }
     if (isVoice) reply = `🎙️ “${text.slice(0, 200)}”\n\n${reply}`;
 
-    let voice: string | null = null;
-    if (isVoice && user.settings?.voiceReplies !== false) {
+    const voice = isVoice && user.settings?.voiceReplies !== false ? await this.speak(reply.replace(/^🎙️ “[^”]*”\n\n/, '')) : null;
+    return { reply: reply.slice(0, 4000), voice, userId: user.id };
+  }
+
+  /** A customer of an organisation (not a member): the org's desk bot, or silence while staff handle it. */
+  private async customer(org: Parameters<DeskService['inbound']>[0], msg: Inbound): Promise<OutboundReply> {
+    const prepared = await this.prepare(msg);
+    if ('error' in prepared) return { reply: prepared.error, voice: null, userId: null };
+    const reply = await this.desk.inbound(org, { channel: msg.channel, externalId: msg.externalId, displayName: msg.displayName, ...prepared });
+    const voice = reply && prepared.isVoice ? await this.speak(reply) : null;
+    return { reply: reply.slice(0, 4000), voice, userId: null };
+  }
+
+  /** Voice note → text; photos/documents → attachments. */
+  private async prepare(msg: Inbound): Promise<{ text: string; isVoice: boolean; attachments: Attachment[] } | { error: string }> {
+    let text = msg.text?.trim() ?? '';
+    const isVoice = !!msg.audio;
+    if (msg.audio) {
       try {
-        voice = (await this.media.speak(reply.replace(/^🎙️ “[^”]*”\n\n/, '').replace(/[*_`#>]/g, ''))).toString('base64');
+        text = await this.media.transcribe(Buffer.from(msg.audio.data, 'base64'), msg.audio.mime);
       } catch (e) {
-        this.log.warn(`TTS failed: ${(e as Error).message}`);
+        return { error: `⚠️ I couldn't understand that voice note (${(e as Error).message}).` };
       }
     }
-    return { reply: reply.slice(0, 4000), voice, userId: user.id };
+    const attachments = [msg.image, msg.document].filter(Boolean).map((a, i) => ({ name: a!.name ?? `attachment-${i + 1}`, mime: a!.mime, data: a!.data }));
+    if (!text && attachments.length) text = 'Please look at the attachment.';
+    if (!text) return { error: 'Send me a message, a voice note or a photo.' };
+    return { text, isVoice, attachments };
+  }
+
+  private async speak(text: string) {
+    try {
+      return (await this.media.speak(text.replace(/[*_`#>]/g, ''))).toString('base64');
+    } catch (e) {
+      this.log.warn(`TTS failed: ${(e as Error).message}`);
+      return null;
+    }
   }
 }

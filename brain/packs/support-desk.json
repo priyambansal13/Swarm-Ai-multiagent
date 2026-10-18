@@ -1,0 +1,31 @@
+{
+  "id": "support-desk",
+  "name": "WhatsApp Support Desk",
+  "description": "Customers chat on WhatsApp/Telegram; the bot answers from your knowledge base with sources and hands over to your team (inbox) when unsure, when asked, or for refunds and complaints.",
+  "org": {
+    "desk": {
+      "enabled": true,
+      "channels": ["whatsapp", "telegram"],
+      "escalateWhenUnsure": true,
+      "greeting": "Hi! 👋 I'm the virtual assistant. Ask me anything — I can also connect you to our team.",
+      "handoffMessage": "Thanks — I've passed this to our team and a person will reply here shortly."
+    }
+  },
+  "agents": [
+    {
+      "agentId": "knowledge",
+      "audience": "both",
+      "extraInstructions": "Customers may write informally or in Hinglish — search with the key nouns (product, policy, place). Quote prices and timings exactly as written in the source."
+    },
+    { "agentId": "research", "audience": "staff" },
+    {
+      "agentId": "order_help",
+      "kind": "custom",
+      "label": "Order help",
+      "description": "Order, delivery, return and refund questions from customers — explains the policy and what the customer should share.",
+      "prompt": "You are the Order help agent of a customer support desk. Use kb_search to find the shipping, return, exchange and refund policy that applies. Explain the steps in plain language and list exactly what the customer must share (order number, photos, phone number). You cannot see or change orders: say that a team member will check the order. Cite the policy as [source name, p. N].",
+      "tools": ["kb_search", "kb_list_sources"],
+      "audience": "customer"
+    }
+  ]
+}

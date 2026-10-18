@@ -1,6 +1,6 @@
-import { CanActivate, createParamDecorator, ExecutionContext, Injectable, UnauthorizedException } from '@nestjs/common';
+import { CanActivate, createParamDecorator, ExecutionContext, ForbiddenException, Injectable, mixin, Type, UnauthorizedException } from '@nestjs/common';
 import { timingSafeEqual } from 'node:crypto';
-import type { User } from '../db/entities.js';
+import type { OrgRole, User } from '../db/entities.js';
 import { AuthService } from './auth.service.js';
 
 /** Bearer-token guard for the web app / API clients. Attaches `req.user`. */
@@ -32,3 +32,15 @@ export class N8nGuard implements CanActivate {
 }
 
 export const CurrentUser = createParamDecorator((_: unknown, ctx: ExecutionContext): User => ctx.switchToHttp().getRequest().user);
+
+/** Use after AuthGuard: `@UseGuards(AuthGuard, RoleGuard('owner', 'admin'))`. */
+export function RoleGuard(...roles: OrgRole[]): Type<CanActivate> {
+  class RoleGuardMixin implements CanActivate {
+    canActivate(ctx: ExecutionContext) {
+      const user: User | undefined = ctx.switchToHttp().getRequest().user;
+      if (!user || !roles.includes(user.role)) throw new ForbiddenException(`Needs role: ${roles.join(' or ')}`);
+      return true;
+    }
+  }
+  return mixin(RoleGuardMixin);
+}

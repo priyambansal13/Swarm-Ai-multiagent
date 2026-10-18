@@ -58,8 +58,14 @@ export class OpenAIMediaService {
     return res.choices[0]?.message?.content ?? '';
   }
 
-  async embed(texts: string[]): Promise<number[][]> {
-    const res = await this.openai.embeddings.create({ model: 'text-embedding-3-small', input: texts.map((t) => t.slice(0, 8000)) });
-    return res.data.map((d) => d.embedding);
+  /** text-embedding-3-small (1536 dims). `apiKey` = an organisation's own key. */
+  async embed(texts: string[], apiKey?: string): Promise<number[][]> {
+    const client = apiKey ? new OpenAI({ apiKey }) : this.openai;
+    const out: number[][] = [];
+    for (let i = 0; i < texts.length; i += 96) {
+      const res = await client.embeddings.create({ model: 'text-embedding-3-small', input: texts.slice(i, i + 96).map((t) => t.slice(0, 8000)) });
+      out.push(...res.data.map((d) => d.embedding));
+    }
+    return out;
   }
 }

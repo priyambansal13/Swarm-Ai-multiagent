@@ -15,6 +15,7 @@ Contents
 8. [Libraries and frameworks — what each one is used for](#8-libraries-and-frameworks)
 9. [External services and APIs](#9-external-services-and-apis)
 10. [Why this split (brain vs n8n)](#10-why-this-split-brain-vs-n8n)
+11. [Platform: organisations, agent registry, knowledge base, customer desk](#11-platform-organisations-agent-registry-knowledge-base-customer-desk)
 
 ---
 
@@ -465,3 +466,75 @@ The two sides talk through three narrow, authenticated interfaces: **HTTP with `
 
 _Diagrams: sources are in [`docs/diagrams/*.mmd`](diagrams/). After editing one, run `docs/diagrams/render.sh` to
 regenerate the PNG images (uses mermaid-cli via `npx`)._
+
+---
+
+## 11. Platform: organisations, agent registry, knowledge base, customer desk
+
+Full guide: [PLATFORM.md](PLATFORM.md).
+
+![Organisation model](diagrams/12-tenancy.png)
+
+**How a run is assembled now.** For every message the brain builds a `RunContext` with the user's **organisation**
+(settings, own OpenAI key) and the **agents resolved for this run**:
+1. `AgentRegistryService` merges the built-in agents in code with the organisation's `agent_configs` rows.
+2. It keeps the agents allowed for the run's audience (members or customers).
+3. It builds each agent's tools from the shared catalogue, wrapping tools marked *approval* so they only `propose()`.
+
+The graph (master → confirm) is unchanged. Approved `tool_call` actions run the real tool in the `confirm` node.
+
+**Knowledge base:** ingestion and search.
+
+![Knowledge base](diagrams/11-knowledge.png)
+
+**Customer desk with human handoff:**
+- `ChannelsService` sends unknown senders to `DeskService` when an organisation enabled its desk.
+- The run uses `mode: 'customer'`: a stand-in user, customer-safe tools only, and an `escalate_to_human` tool.
+- The conversation state is in `conversations` / `conversation_messages`; the LangGraph thread is `desk-<id>`.
+
+![Customer desk](diagrams/10-customer-desk.png)
+
+<details><summary>Technical version (Mermaid)</summary>
+
+```mermaid
+sequenceDiagram
+  autonumber
+  actor C as Customer
+  participant N as n8n channel workflow
+  participant CH as ChannelsService
+  participant D as DeskService
+  participant G as LangGraph (mode customer)
+  participant K as KnowledgeService (pgvector)
+  participant R as RecordsService (outbox)
+  actor S as Staff (web /inbox)
+
+  C->>N: message
+  N->>CH: POST /api/channels/inbound {externalId, to: phone_number_id}
+  CH->>CH: not linked → DeskService.orgFor(channel, to)
+  CH->>D: inbound(org, text)
+  alt status waiting / human
+    D-->>N: reply "" → n8n "Has reply?" skips sending
+  else WANTS_HUMAN regex
+    D->>R: notify owners/admins/agents (handoff)
+  else bot
+    D->>G: run(desk-<id>, customer ctx, staff replies since last bot turn + text)
+    G->>K: ask_knowledge_agent → kb_search
+    G-->>D: reply (+ ctx.escalation if escalate_to_human was called)
+    D->>R: escalation → notify staff with summary
+  end
+  S->>D: POST /api/desk/conversations/:id/reply
+  D->>N: MCP send_whatsapp_message / send_telegram_message
+  S->>D: POST …/release → status bot
+```
+
+</details>
+
+**New libraries**
+
+| Library | Used for | Where |
+|---|---|---|
+| **unpdf** | PDF text extraction page by page (pdf.js, pure JS, no native deps) | `knowledge/knowledge.service.ts` |
+| **mammoth** | Word `.docx` → plain text | `knowledge/knowledge.service.ts` |
+| pgvector **HNSW** index | fast cosine search over knowledge passages | `kb_chunks_vec` index |
+| Nest `mixin` guards | `RoleGuard('owner','admin')` on admin / desk controllers | `auth/guards.ts` |
+

@@ -6,6 +6,11 @@ Calendar, researches the web, plans travel, tracks expenses/tasks/notes/reminder
 your own **Google Sheet**, and runs **7 proactive automations** (morning brief, inbox triage, meeting prep…).
 Several users are supported; each connects their own Google account.
 
+**Platform (Phase 1):** **organisations with roles and invitations**, a per-organisation **agent registry** (switch
+agents on/off, tune prompts, models, tools and approval rules, add custom agents, apply industry packs), a
+**knowledge base** (PDF/Word/web pages → cited answers), a **customer desk** on WhatsApp/Telegram with **human handoff**
+to a staff **Inbox**, and an **admin console**. See **[docs/PLATFORM.md](docs/PLATFORM.md)**.
+
 Architecture: **hybrid** — a LangGraph **"brain"** (NestJS) runs every agent; **n8n** runs the channels, the
 scheduler and outbound delivery, and exposes channel tools to the brain over **MCP**. See [PLAN.md](PLAN.md) for the
 decisions (why n8n, why hybrid, alternatives).
@@ -74,7 +79,7 @@ Flags: `--yes` (non-interactive: keep existing values, read new ones from enviro
 `OPENAI_API_KEY`), `--tunnel`, `--no-build`, `--no-start`.
 
 Then open **http://localhost:3200**, sign up, and use **Settings** to connect Google and link Telegram/WhatsApp.
-Where to get each key: **[docs/SETUP-INTEGRATIONS.md](docs/SETUP-INTEGRATIONS.md)**. What you can ask it: **[docs/USER-GUIDE.md](docs/USER-GUIDE.md)**. Flow diagrams and every library explained: **[docs/ARCHITECTURE.md](docs/ARCHITECTURE.md)**. Roadmap of new agents, tools, flows and client packs: **[docs/EXPANSION-PLAN.md](docs/EXPANSION-PLAN.md)**.
+Where to get each key: **[docs/SETUP-INTEGRATIONS.md](docs/SETUP-INTEGRATIONS.md)**. What you can ask it: **[docs/USER-GUIDE.md](docs/USER-GUIDE.md)**. Flow diagrams and every library explained: **[docs/ARCHITECTURE.md](docs/ARCHITECTURE.md)**. Organisations, agents, knowledge base, customer desk and admin console: **[docs/PLATFORM.md](docs/PLATFORM.md)**. Roadmap of new agents, tools, flows and client packs: **[docs/EXPANSION-PLAN.md](docs/EXPANSION-PLAN.md)**.
 
 <details><summary>Manual setup (without the script)</summary>
 
@@ -362,11 +367,16 @@ Key files: `src/components/chat/ChatApp.tsx` (AG-UI `HttpAgent`, interrupts, res
 
 ## 12. Data model
 
-PostgreSQL database `swarm` (TypeORM, auto-sync in dev) — every table is per user (`userId`):
+PostgreSQL database `swarm` (TypeORM, auto-sync in dev). Personal tables are per user (`userId`); shared tables are per
+organisation (`orgId`):
 
 | Table | Holds |
 |---|---|
-| `users` | email, name, password hash (scrypt), timezone, settings (brief time, notify channel, voice replies, news topics, home city…) |
+| `organizations`, `org_invites` | tenants: name, slug, settings (assistant name, colour, models, encrypted own OpenAI key, customer desk); one-time invitations with a role |
+| `users` | email, name, password hash (scrypt), timezone, settings (brief time, notify channel, voice replies, news topics, home city…), `orgId`, `role` (owner/admin/agent/member) |
+| `agent_configs` | per-organisation agent registry (on/off, prompt, extra instructions, model, tools, approval tools, audience; custom agents) |
+| `kb_sources` + `kb_chunks` (`vector(1536)`, HNSW) | knowledge base: files/pages/text and their page-aware passages |
+| `conversations`, `conversation_messages` | customer desk chats (bot / waiting / human / closed), assignee, hand-over reason and summary, transcript |
 | `channel_links`, `link_codes` | Telegram chat / WhatsApp number ↔ user; one-time link codes |
 | `google_accounts` | Google email, **AES-256-GCM encrypted** refresh token, workbook id/url |
 | `threads` | conversations (web/telegram/whatsapp), status, pending confirmation |
@@ -392,7 +402,11 @@ also read rows you add manually via `read_my_sheet`).
 - **Secrets:** Google refresh tokens encrypted at rest; channel tokens live only in n8n (encrypted with
   `N8N_ENCRYPTION_KEY`); n8n ↔ brain calls use a shared secret; the MCP server uses a Bearer token; the LLM never picks
   message recipients (the brain fills in the user's own linked chat).
-- **Unknown chats** can't use the assistant until linked with a one-time code.
+- **Unknown chats** can't use a personal assistant until linked with a one-time code. If an organisation turned on its
+  customer desk, they talk to that organisation's customer bot instead, which only gets **customer-safe tools**
+  (knowledge base, web search, weather…) — never a member's mail, calendar or records, whatever the configuration.
+- **Roles:** the admin console needs owner/admin, the customer Inbox owner/admin/agent (`RoleGuard`); an organisation's
+  own OpenAI key is stored encrypted and never returned by the API.
 - **Deleting a conversation** removes its messages and agent state (LangGraph checkpoints) too. Privacy policy text for
   Meta/Google app settings: [docs/PRIVACY-POLICY.md](docs/PRIVACY-POLICY.md).
 - **Facts come from sources:** the master agent sends factual questions (dates, prices, news…) to the Research agent
@@ -404,7 +418,7 @@ also read rows you add manually via `read_my_sheet`).
 
 ## 14. Testing
 ```bash
-cd brain && pnpm test        # AG-UI contract test (official verifyEvents) + confirmation-guarantee test (12 tests)
+cd brain && pnpm test        # AG-UI contract test (official verifyEvents) + confirmation-guarantee test (28 tests)
 ```
 Verified end to end with the real model during development: multi-agent parallel requests, expense/task/reminder
 logging, delete → approval → executed / rejected, India-first weather with IMD alerts, Telegram link + text + voice
@@ -457,3 +471,5 @@ swarm-ai/
 - The WhatsApp test number only reaches the (max 5) recipients added in Meta; your own number needs business
   verification.
 - SerpAPI's free plan is 250 searches/month; when it runs out research falls back to the keyless sources.
+- Knowledge base: scanned (image-only) PDFs need OCR first; Google Drive folders and scheduled re-sync are not built
+  yet. One Telegram bot per server, so only one organisation should run a Telegram customer desk.

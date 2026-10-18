@@ -2,6 +2,7 @@
 
 Result: SwarmAI running 24×7 at `https://<name>.duckdns.org`, with Telegram/WhatsApp webhooks, HTTPS, nightly backups,
 for ₹0/month (plus your OpenAI usage). Why this setup and what it costs: [DEPLOYMENT-FREE.md](DEPLOYMENT-FREE.md).
+How it fits together (all components, request paths, operations): [DEPLOYMENT-ARCHITECTURE.md](DEPLOYMENT-ARCHITECTURE.md).
 
 ```mermaid
 flowchart LR
@@ -99,7 +100,8 @@ cd swarm-ai && docker compose stop brain
 gunzip -c ~/swarm.sql.gz | docker exec -i swarm-db psql -q -U swarm -d swarm
 docker compose start brain && rm ~/swarm.sql.gz
 ```
-Without this step, sign up again on the new address (you become owner of a new organisation).
+Without this step, sign up again on the new address (you become owner of a new organisation). The server runs with
+`SIGNUP_MODE=invite`: after that first account, others join through **Admin → Members → Create link**.
 
 ## 8. After go-live
 - **Google:** Cloud Console → APIs & Services → Credentials → your OAuth client → add redirect URI

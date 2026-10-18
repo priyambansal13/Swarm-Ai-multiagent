@@ -98,6 +98,9 @@ Pune tomorrow"*. Web chat supports push-to-talk and read-aloud.
 | Branding | Assistant name and colour shown in the app and to customers |
 | Agent settings | Switch agents on/off, add house rules, change model, choose tools and who can use each agent |
 | Industry packs | One-click presets: WhatsApp Support Desk, Clinic Front Desk |
+| Always-on hosting | Runs 24×7 in the cloud with HTTPS; restarts itself after a crash or reboot; can also run in your own cloud |
+| Invite-only access | On a hosted server only invited people can create accounts |
+| Nightly backups | Every night, kept 14 days; the team is alerted on Telegram if a backup fails |
 | Usage overview | Members, documents, waiting customers, conversations, actions per agent (30 days) |
 
 ---

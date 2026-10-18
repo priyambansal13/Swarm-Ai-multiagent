@@ -1,4 +1,5 @@
-import { BadRequestException, ConflictException, Injectable, UnauthorizedException } from '@nestjs/common';
+import { BadRequestException, ConflictException, ForbiddenException, Injectable, UnauthorizedException } from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { z } from 'zod';
@@ -34,11 +35,29 @@ export const SettingsSchema = z.object({
 
 const TOKEN_TTL = 30 * 24 * 3600;
 
+/** SIGNUP_MODE=invite: new accounts need an invitation link — except the very first account, so a fresh install can
+ *  create its owner. Default `open` (anyone can create an account and a new organisation). */
+export type SignupMode = 'open' | 'invite';
+
 export const publicUser = (u: User) => ({ id: u.id, email: u.email, name: u.name, timezone: u.timezone, settings: u.settings, orgId: u.orgId, role: u.role });
 
 @Injectable()
 export class AuthService {
-  constructor(@InjectRepository(User) private readonly users: Repository<User>, private readonly orgs: OrgService) {}
+  constructor(
+    @InjectRepository(User) private readonly users: Repository<User>,
+    private readonly orgs: OrgService,
+    private readonly config: ConfigService,
+  ) {}
+
+  get signupMode(): SignupMode {
+    return this.config.get<string>('SIGNUP_MODE')?.trim().toLowerCase() === 'invite' ? 'invite' : 'open';
+  }
+
+  /** What the sign-up page may offer: `open` = anyone may create an account (and organisation). */
+  async signupPolicy() {
+    const mode = this.signupMode;
+    return { mode, open: mode === 'open' || (await this.users.count()) === 0 };
+  }
 
   private validTz(tz?: string) {
     if (!tz) return 'Asia/Kolkata';
@@ -52,6 +71,9 @@ export class AuthService {
 
   async signup(input: z.infer<typeof SignupSchema>) {
     if (await this.users.findOne({ where: { email: input.email } })) throw new ConflictException('An account with this email already exists');
+    if (!input.invite && !(await this.signupPolicy()).open) {
+      throw new ForbiddenException('Sign-up is by invitation only. Ask an admin of your organisation for an invite link.');
+    }
     const timezone = this.validTz(input.timezone);
     // Join the inviting organisation, or start a new one as its owner.
     const invited = input.invite ? await this.orgs.invite(input.invite) : null;

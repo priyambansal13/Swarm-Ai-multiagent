@@ -15,6 +15,10 @@ Architecture: **hybrid** — a LangGraph **"brain"** (NestJS) runs every agent; 
 scheduler and outbound delivery, and exposes channel tools to the brain over **MCP**. See [PLAN.md](PLAN.md) for the
 decisions (why n8n, why hybrid, alternatives).
 
+**Production:** runs 24×7 for ₹0/month on one **Oracle Cloud Always Free** ARM server — Docker containers behind Caddy
+(automatic HTTPS) on a free DuckDNS address, nightly backups with Telegram alerts. See
+**[§17 Production deployment](#17-production-deployment-oracle-cloud-free)** and [docs/DEPLOY-ORACLE.md](docs/DEPLOY-ORACLE.md).
+
 | Part | Tech | Port |
 |---|---|---|
 | `web/` | Next.js 16.4 PWA, React 19, Tailwind v4, `@ag-ui/client` | **3200** |
@@ -41,6 +45,7 @@ decisions (why n8n, why hybrid, alternatives).
 14. [Testing](#14-testing)
 15. [Project structure](#15-project-structure)
 16. [Limitations](#16-limitations)
+17. [Production deployment (Oracle Cloud, free)](#17-production-deployment-oracle-cloud-free)
 
 ---
 
@@ -70,7 +75,7 @@ Only the **OpenAI key** is required; press Enter to skip any integration and add
 | `setup` *(default)* | everything above |
 | `configure` | re-run the key/token wizard only |
 | `n8n` | rebuild, import and publish the n8n workflows + credentials |
-| `tunnel` | start a Cloudflare quick tunnel and use it as n8n's public URL (Telegram/WhatsApp webhooks) |
+| `tunnel` | start a Cloudflare quick tunnel and use it as n8n's public URL (Telegram/WhatsApp webhooks). **Don't use it while a server deployment is live** — it moves the webhooks to your laptop |
 | `start` · `stop` · `restart` | brain + web (and the tunnel) in the background |
 | `status` | services, integrations and n8n workflows |
 | `doctor` | prerequisites + configuration checks + status |
@@ -363,6 +368,7 @@ Key files: `src/components/chat/ChatApp.tsx` (AG-UI `HttpAgent`, interrupts, res
 | `TELEGRAM_BOT_USERNAME`, `WHATSAPP_DISPLAY_NUMBER` | no | — | deep links in Settings |
 | `YATRA_API_URL`, `YATRA_WEB_URL` | no | `http://localhost:4100`, `:3100` | India trip plans |
 | `PORT`, `PUBLIC_API_URL`, `WEB_URL`, `CORS_ORIGIN` | no | 4200, `http://localhost:4200`, `http://localhost:3200`, same | server |
+| `SIGNUP_MODE` | no | `open` | `invite` = new accounts need an invite link (the first account is always allowed); `server-env` sets `invite` for servers |
 | `LANGSMITH_TRACING`, `LANGSMITH_API_KEY`, `LANGSMITH_PROJECT` | no | off | tracing |
 
 ---
@@ -420,7 +426,7 @@ also read rows you add manually via `read_my_sheet`).
 
 ## 14. Testing
 ```bash
-cd brain && pnpm test        # AG-UI contract test (official verifyEvents) + confirmation-guarantee test (28 tests)
+cd brain && pnpm test        # AG-UI contract test (official verifyEvents) + confirmation-guarantee test, sign-up policy (32 tests)
 ```
 Verified end to end with the real model during development: multi-agent parallel requests, expense/task/reminder
 logging, delete → approval → executed / rejected, India-first weather with IMD alerts, Telegram link + text + voice
@@ -435,10 +441,20 @@ swarm-ai/
 ├── PLAN.md                     # decisions, n8n vs alternatives, LangGraph options
 ├── README.md                   # this file
 ├── docs/SETUP-INTEGRATIONS.md  # Google, Telegram, WhatsApp, tunnel, SerpAPI, LangSmith
+├── docs/DEPLOY-ORACLE.md       # production runbook (Oracle Cloud Always Free)
+├── docs/DEPLOYMENT-ARCHITECTURE.md  # production components, request paths, release pipeline, operations
+├── docs/DEPLOYMENT-FREE.md     # free hosting options, costs, risks
+├── docs/PLATFORM.md            # organisations, agent registry, knowledge base, customer desk, admin console
+├── docs/sales/                 # customer deck, features by role, commercialisation plan
 ├── docker-compose.yml          # Postgres (pgvector) + n8n
+├── docker-compose.prod.yml     # production overlay: + brain, web, Caddy; localhost-only ports; health checks
+├── brain/Dockerfile · web/Dockerfile   # production images (arm64 + x86)
 ├── infra/init-db.sql           # creates databases swarm & n8n, enables vector
+├── infra/Caddyfile             # HTTPS + routing: /api → brain, /webhook → n8n, / → web
+├── infra/server-bootstrap.sh   # one-time server setup (Ubuntu/Debian, Oracle Linux/RHEL)
+├── infra/backup.sh             # nightly DB dumps, 14 days, Telegram alert on failure
 ├── setup.sh · setup.ps1 · setup.cmd   # one-command setup for macOS/Linux and Windows
-├── scripts/swarm.mjs           # cross-platform setup & run tool (setup, configure, n8n, tunnel, start/stop, status, doctor)
+├── scripts/swarm.mjs           # setup & run tool (setup, configure, n8n, tunnel, start/stop, status, doctor, server-env, deploy)
 ├── n8n/
 │   ├── build-workflows.mjs     # generates workflow JSON
 │   ├── setup.sh                # = node scripts/swarm.mjs n8n
@@ -468,10 +484,102 @@ swarm-ai/
 - Flight, hotel and shopping search need `SERPAPI_KEY`; without it the agents return Google links instead.
 - The Google Sheet mirror is one-way (edits in the sheet don't flow back, but the Records agent can read them).
 - Reminders are one-off (no recurring reminders yet).
-- Everything runs on one machine: when it sleeps, SwarmAI is offline, and a free Cloudflare quick-tunnel URL changes on
-  every restart (`./setup.sh tunnel` re-registers the Telegram and WhatsApp webhooks).
+- Local mode runs on one machine: when it sleeps, SwarmAI is offline, and a free Cloudflare quick-tunnel URL changes on
+  every restart. The production deployment (§17) removes both problems; it is still a single server (no failover).
+- Only one place can receive Telegram/WhatsApp at a time (one webhook per bot / Meta app): the server **or** a laptop.
 - The WhatsApp test number only reaches the (max 5) recipients added in Meta; your own number needs business
   verification.
 - SerpAPI's free plan is 250 searches/month; when it runs out research falls back to the keyless sources.
 - Knowledge base: scanned (image-only) PDFs need OCR first; Google Drive folders and scheduled re-sync are not built
   yet. One Telegram bot per server, so only one organisation should run a Telegram customer desk.
+
+---
+
+## 17. Production deployment (Oracle Cloud, free)
+
+Full runbook: **[docs/DEPLOY-ORACLE.md](docs/DEPLOY-ORACLE.md)** · components, request paths, release pipeline and
+operations with diagrams: **[docs/DEPLOYMENT-ARCHITECTURE.md](docs/DEPLOYMENT-ARCHITECTURE.md)** · why Oracle and the
+alternatives: [docs/DEPLOYMENT-FREE.md](docs/DEPLOYMENT-FREE.md).
+
+![Deployment components](docs/diagrams/13-deployment.png)
+
+### Where everything runs
+One **Oracle Cloud Always Free** VM (Ampere A1 ARM, 1 OCPU / 6 GB or 2 / 12; Oracle Linux 9 or Ubuntu), everything in
+Docker, started by `./setup.sh deploy` and restarted automatically after a crash or reboot:
+
+| Container | What | Reachable from the internet |
+|---|---|---|
+| `swarm-caddy` | Caddy: HTTPS (Let's Encrypt, auto-renewed) and routing | **yes — ports 80/443 only** |
+| `swarm-web` | Next.js web app | via Caddy: `https://<your-domain>/` |
+| `swarm-brain` | NestJS + LangGraph agents | via Caddy: `https://<your-domain>/api/…` (incl. Swagger `/api/docs`) |
+| `swarm-n8n` | **n8n** — Telegram & WhatsApp channels, scheduler, error alerts, MCP channel tools | **webhooks only**: `https://<your-domain>/webhook/…` |
+| `swarm-db` | Postgres 17 + pgvector — databases `swarm` (app) and `n8n` (workflows, runs) | no |
+
+Postgres, n8n, brain and web listen on `127.0.0.1` only; the n8n editor and its REST API return 404 from outside.
+The address is a free **DuckDNS** name; a cron job on the server re-points it every 5 minutes if the IP ever changes.
+
+### Opening the n8n editor
+n8n is on the server, not public. Tunnel to it over SSH from your computer and keep the terminal open:
+```bash
+ssh -L 5678:localhost:5678 <user>@<server-ip>      # <user> = opc on Oracle Linux, ubuntu on Ubuntu
+```
+then open **http://localhost:5678**. The first visit asks you to create the n8n **owner account** (separate from any
+n8n on your laptop). Workflows are generated from `n8n/build-workflows.mjs`; edits made in the editor are overwritten
+the next time `./setup.sh deploy` or `./setup.sh n8n` runs.
+
+### Deploying and updating
+| Step | Where | Command |
+|---|---|---|
+| Prepare the server once | server | `bash infra/server-bootstrap.sh <duckdns-name>` (Docker, Node 22, firewall, swap, security updates, DuckDNS updater, backup cron) |
+| Write the server's settings | your computer | `./setup.sh server-env <your-domain>` → copies keys from your local `.env` files, adds public URLs and **new production secrets** into `.swarm/server/` (git-ignored), then `scp` them to `swarm-ai/.env` and `swarm-ai/brain/.env` on the server |
+| First deploy / every update | server | `cd swarm-ai && git pull && ./setup.sh deploy` — builds images, starts containers, imports n8n workflows, registers Telegram + WhatsApp webhooks on the public URL, checks HTTPS |
+
+The server's `swarm-ai` folder is a git checkout of `main`, so merging to `main` and running the update command is
+the whole release process. `.env` and `brain/.env` on the server are git-ignored and never pulled or pushed.
+
+### Everyday operations (on the server, in `~/swarm-ai`)
+| Task | Command |
+|---|---|
+| Status / health | `./setup.sh status` · `docker compose ps` (brain and web show `healthy`) |
+| Logs | `docker compose logs -f brain` (or `web`, `n8n`, `caddy`) |
+| Restart one part | `docker compose restart brain` |
+| Backup now | `infra/backup.sh` |
+| Restore | `gunzip -c ~/swarm-backups/swarm-<date>.sql.gz \| docker exec -i swarm-db psql -U swarm -d swarm` |
+| DuckDNS failures | `journalctl -t duckdns` (empty = all good) |
+
+### Backups, alerts and secrets
+- **Database backups:** nightly at 02:30, both databases, kept 14 days in `~/swarm-backups` on the server; optional
+  upload to a private OCI Object Storage bucket (pre-authenticated write URL in `~/.swarm-backup-url`).
+- **Alerts:** a failed backup sends a Telegram message to `SWARM_ADMIN_TELEGRAM_CHAT_ID` (the same chat as n8n error
+  alerts); a failed DuckDNS update is logged to the system journal.
+- **Secrets:** the server can be rebuilt from the repo, but not without `.env`, `brain/.env` (`APP_SECRET` decrypts
+  Google tokens and organisation keys), `web/.env.local` and `.swarm/server/` (database password, n8n encryption key).
+  Keep an encrypted copy off your computer — commands in [DEPLOY-ORACLE.md → Secrets backup](docs/DEPLOY-ORACLE.md#secrets-backup-your-mac).
+  Make a new one after changing any key.
+
+### Who can sign up
+A public server is reachable by anyone, and every account uses **your OpenAI key**. `./setup.sh server-env` therefore
+sets `SIGNUP_MODE=invite`: the first account (the owner) can sign up normally; after that the sign-up page says
+*"Sign-up is by invitation only"* and the API refuses accounts without a valid invite. Add people with
+**Admin → Members → Create link** (single use, 7 days, optionally locked to one email). To open sign-up again, set
+`SIGNUP_MODE=open` in the server's `brain/.env` and run `docker compose up -d brain`.
+
+### Google login in production
+In Google Cloud Console (project that owns the OAuth client):
+1. **APIs & Services → Credentials →** your OAuth client → **Authorised redirect URIs** → add
+   `https://<your-domain>/api/google/callback` (keep the localhost one for local development).
+2. **OAuth consent screen → Audience → Test users** → add every Gmail address that will connect (up to 100 while the
+   app is in *Testing*; Google asks testers to reconnect every 7 days until the app is verified).
+Each user then connects their own account in **Settings → Connect Google**.
+
+### Laptop vs server
+- Telegram and WhatsApp deliver to **one** webhook per bot/app. While the server is live, **don't run
+  `./setup.sh tunnel` or `./setup.sh n8n` on your laptop** — either moves the webhooks back to the laptop.
+- Keep the laptop stack stopped (`./setup.sh stop` and `docker compose stop`), or use it for web-only development;
+  otherwise its scheduler can send duplicate reminders/briefs through the same bot.
+- The server has its own database: accounts, organisations and data are not shared with a laptop install.
+
+### Cost
+₹0/month for hosting within Oracle's Always Free limits (A1 up to 2 OCPU / 12 GB, 200 GB total disk). Set a ₹1
+budget alert in OCI Billing. The AI model (OpenAI) is paid per use — or billed to an organisation's own key — and
+WhatsApp follows Meta's pricing.

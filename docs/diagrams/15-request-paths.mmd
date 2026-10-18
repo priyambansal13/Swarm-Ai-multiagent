@@ -1,0 +1,26 @@
+sequenceDiagram
+  autonumber
+  participant U as Customer / member
+  participant T as Telegram / WhatsApp
+  participant C as Caddy (HTTPS)
+  participant N as n8n
+  participant B as brain
+  participant DB as Postgres
+  participant AI as OpenAI
+  Note over U,AI: A phone message
+  U->>T: text or voice note
+  T->>C: POST https://domain/webhook/…
+  C->>N: /webhook/* (only public n8n path)
+  N->>B: POST /api/channels/inbound (X-Swarm-Key)
+  B->>DB: user / org / thread, knowledge search
+  B->>AI: agents (master + specialists)
+  AI-->>B: answer
+  B-->>N: reply (empty while staff handle the chat)
+  N->>T: send reply
+  T-->>U: answer on their chat
+  Note over U,AI: The web app
+  U->>C: https://domain/
+  C->>U: web app pages (from web container)
+  U->>C: POST /api/agui (streamed answer)
+  C->>B: /api/* (no buffering)
+  B-->>U: live agent steps + answer

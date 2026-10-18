@@ -13,6 +13,12 @@ export function AuthForm({ mode }: { mode: 'login' | 'signup' }) {
   const [error, setError] = useState<string | null>(null);
   const [f, setF] = useState({ name: '', email: '', password: '', orgName: '' });
   const [joining, setJoining] = useState<{ orgName: string; role: string; email: string | null } | null>(null);
+  const [inviteOnly, setInviteOnly] = useState(false);
+
+  useEffect(() => {
+    if (mode !== 'signup' || invite) return;
+    api<{ open: boolean }>('/auth/signup-policy').then((p) => setInviteOnly(!p.open)).catch(() => undefined);
+  }, [mode, invite]);
 
   useEffect(() => {
     if (mode !== 'signup' || !invite) return;
@@ -55,6 +61,12 @@ export function AuthForm({ mode }: { mode: 'login' | 'signup' }) {
           {joining && <p className="rounded-full bg-accent-soft px-3 py-1 text-sm font-medium">You&apos;re invited as <b>{joining.role}</b></p>}
           <p className="text-sm text-muted">Ten specialist agents for email, calendar, research, travel, money, notes and reminders — on web, Telegram and WhatsApp.</p>
         </div>
+        {inviteOnly ? (
+          <div role="status" className="space-y-2 rounded-2xl border border-line bg-surface p-5 text-sm shadow-sm">
+            <p className="font-semibold">Sign-up is by invitation only</p>
+            <p className="text-muted">Ask an admin of your organisation for an invite link, then open it to create your account.</p>
+          </div>
+        ) : (
         <form onSubmit={submit} className="space-y-3 rounded-2xl border border-line bg-surface p-5 shadow-sm">
           {mode === 'signup' && (
             <label className="block text-sm font-medium">Name
@@ -77,6 +89,7 @@ export function AuthForm({ mode }: { mode: 'login' | 'signup' }) {
             {busy ? 'Please wait…' : mode === 'login' ? 'Sign in' : 'Create account'}
           </button>
         </form>
+        )}
         <p className="mt-4 text-center text-sm text-muted">
           {mode === 'login' ? <>New here? <Link className="font-medium text-teal underline" href="/signup">Create an account</Link></> : <>Have an account? <Link className="font-medium text-teal underline" href="/login">Sign in</Link></>}
         </p>

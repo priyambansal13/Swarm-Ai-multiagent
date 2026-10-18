@@ -1,0 +1,15 @@
+{
+  "name": "swarm-ai-deck",
+  "private": true,
+  "description": "Builds docs/sales/SwarmAI-Customer-Deck.pptx",
+  "scripts": {
+    "build": "node build-deck.js"
+  },
+  "dependencies": {
+    "pptxgenjs": "^4.0.1",
+    "react": "^19.3.1",
+    "react-dom": "^19.3.1",
+    "react-icons": "^5.7.0",
+    "sharp": "^0.35.5"
+  }
+}

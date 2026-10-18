@@ -423,7 +423,11 @@ duplicating) and imported/published with the n8n CLI (`import:credentials`, `imp
 |---|---|
 | **Docker Compose** | Runs `pgvector/pgvector:pg17` (PostgreSQL + vector extension) and n8n; `infra/init-db.sql` creates the `swarm` and `n8n` databases and enables `vector`. |
 | **PostgreSQL 17 + pgvector** | One database server for app data, LangGraph checkpoints, n8n's own data, and 1536-dimension note embeddings with cosine-distance search. |
-| **Cloudflare `cloudflared`** | Quick tunnel that gives n8n a public HTTPS URL for Telegram/WhatsApp webhooks. |
+| **Cloudflare `cloudflared`** | Local development only: quick tunnel that gives n8n a public HTTPS URL for Telegram/WhatsApp webhooks. |
+| **Docker images** (`brain/Dockerfile`, `web/Dockerfile`) | Production builds, multi-stage, `node:22-bookworm-slim`, non-root, arm64 + x86. |
+| **Caddy 2** | Production entry point: automatic Let's Encrypt HTTPS, HSTS, routes `/api/*` → brain, `/webhook/*` → n8n, `/` → web. |
+| **`docker-compose.prod.yml`** | Production overlay: adds brain, web and Caddy, binds internal ports to 127.0.0.1, health checks, required DB password. |
+| **Oracle Cloud Always Free + DuckDNS** | The 24×7 server (Ampere A1 VM) and its free address; `infra/server-bootstrap.sh` prepares the VM, `infra/backup.sh` backs up nightly. |
 | **pnpm** | Package manager for brain and web. |
 | **`scripts/swarm.mjs`** (plain Node, no dependencies) | Cross-platform setup/run tool: prerequisites, key wizard with live validation, Docker, build, n8n import/publish, webhook verification, start/stop with pid files and logs, status/doctor. |
 | `setup.sh` / `setup.ps1` / `setup.cmd` | OS launchers for the tool (bash on macOS/Linux, PowerShell on Windows). |
@@ -538,3 +542,23 @@ sequenceDiagram
 | pgvector **HNSW** index | fast cosine search over knowledge passages | `kb_chunks_vec` index |
 | Nest `mixin` guards | `RoleGuard('owner','admin')` on admin / desk controllers | `auth/guards.ts` |
 
+---
+
+## 12. Production deployment
+
+The same containers that run locally run 24×7 on one **Oracle Cloud Always Free** ARM VM, behind **Caddy** (HTTPS)
+on a free **DuckDNS** address. n8n lives on the server too; only its `/webhook/*` path is public and its editor is
+reached through an SSH tunnel.
+
+![Deployment components](diagrams/13-deployment.png)
+
+| Local development | Production server |
+|---|---|
+| brain and web run as Node processes (`./setup.sh start`), Postgres + n8n in Docker | everything in Docker (`./setup.sh deploy`), restarted automatically |
+| `http://localhost:3200` / `:4200` / `:5678` | one HTTPS address: `/` web, `/api/*` brain, `/webhook/*` n8n |
+| Cloudflare quick tunnel for webhooks (URL changes) | fixed DuckDNS name + Let's Encrypt certificate |
+| sign-up open | `SIGNUP_MODE=invite` (first account + invite links) |
+| no backups | nightly dumps of both databases, Telegram alert on failure |
+
+Full picture — request paths, release pipeline, operations, data and secrets, failure scenarios:
+**[DEPLOYMENT-ARCHITECTURE.md](DEPLOYMENT-ARCHITECTURE.md)**. Step by step: [DEPLOY-ORACLE.md](DEPLOY-ORACLE.md).

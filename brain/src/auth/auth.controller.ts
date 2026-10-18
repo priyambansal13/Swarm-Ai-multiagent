@@ -33,6 +33,12 @@ export class AuthController {
     return this.auth.login(parse(LoginSchema, body));
   }
 
+  @Get('auth/signup-policy')
+  @ApiOperation({ summary: 'Whether new accounts can be created without an invitation (SIGNUP_MODE)' })
+  signupPolicy() {
+    return this.auth.signupPolicy();
+  }
+
   @Get('auth/invite/:code')
   @ApiOperation({ summary: 'Organisation and role of an invitation (for the sign-up page)' })
   async invite(@Param('code') code: string) {

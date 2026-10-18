@@ -19,7 +19,9 @@ updates every `.env` file for you:
    (`gmail.modify`, `calendar`, `drive.file`, `openid`, `email`) → add **test users** (every person who will use
    SwarmAI while the app is in *Testing*; up to 100).
 4. **Credentials → Create credentials → OAuth client ID** → *Web application*
-   - Authorised redirect URI: `http://localhost:4200/api/google/callback` (use your public URL in production).
+   - Authorised redirect URI: `http://localhost:4200/api/google/callback`, and for the server deployment also
+     `https://<your-domain>/api/google/callback` (both can be listed; `./setup.sh server-env` sets the server's
+     `GOOGLE_REDIRECT_URI` to the second one). Every new Gmail account must also be added under **Audience → Test users**.
 5. Put the values in `brain/.env`:
    ```
    GOOGLE_CLIENT_ID=…apps.googleusercontent.com

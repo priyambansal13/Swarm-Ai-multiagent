@@ -1,0 +1,53 @@
+flowchart TB
+  subgraph USERS["Internet"]
+    direction LR
+    BR["<b>Browser / phone app</b><br/>team members, admins"]
+    TG["<b>Telegram</b><br/>Bot API"]
+    WA["<b>WhatsApp</b><br/>Meta Cloud API"]
+    ADM["<b>You</b> · SSH key<br/>admin, n8n editor tunnel"]
+  end
+  subgraph SUPPORT["Free supporting services"]
+    direction LR
+    DNS["<b>DuckDNS</b><br/>your-name.duckdns.org → server IP"]
+    LE["<b>Let's Encrypt</b><br/>HTTPS certificate, auto-renewed"]
+  end
+  subgraph OCI["Oracle Cloud Always Free · Mumbai · security list allows only 22 · 80 · 443"]
+    direction TB
+    subgraph VM["Ampere A1 VM · Oracle Linux 9 · firewalld · SELinux · Docker"]
+      direction TB
+      CADDY["<b>Caddy</b> · ports 80 / 443<br/>HTTPS · HSTS · routes by path"]
+      subgraph APPS["Containers · listen on 127.0.0.1 only"]
+        direction LR
+        WEB["<b>web</b> :3200<br/>Next.js PWA"]
+        BRAIN["<b>brain</b> :4200<br/>NestJS + LangGraph agents"]
+        N8N["<b>n8n</b> :5678<br/>channels · scheduler · MCP tools"]
+      end
+      PG[("<b>Postgres 17 + pgvector</b><br/>database swarm · database n8n")]
+    end
+  end
+  subgraph APIS["Paid / external APIs (called from the server)"]
+    direction LR
+    AI["<b>OpenAI</b><br/>chat · embeddings · voice"]
+    EXT["<b>Google</b> Gmail · Calendar · Sheets<br/><b>SerpAPI</b> · <b>Open-Meteo / IMD</b>"]
+  end
+
+  BR -->|"https"| CADDY
+  TG <-->|"webhook in · replies out"| CADDY
+  WA <-->|"webhook in · replies out"| CADDY
+  ADM -.->|"ssh :22"| VM
+  DNS -.-> CADDY
+  LE -.-> CADDY
+  CADDY -->|"/"| WEB
+  CADDY -->|"/api/*"| BRAIN
+  CADDY -->|"/webhook/* only"| N8N
+  N8N <-->|"inbound · tick · MCP"| BRAIN
+  BRAIN --> PG
+  N8N --> PG
+  BRAIN --> AI
+  BRAIN --> EXT
+
+  classDef edge fill:#FEF3C7,stroke:#D97706,color:#111;
+  classDef app fill:#DBEAFE,stroke:#2563EB,color:#111;
+  classDef data fill:#DCFCE7,stroke:#16A34A,color:#111;
+  classDef ext fill:#F3F4F6,stroke:#6B7280,color:#111;
+  class CADDY edge; class WEB,BRAIN,N8N app; class PG data; class BR,TG,WA,DNS,LE,AI,EXT,ADM ext;

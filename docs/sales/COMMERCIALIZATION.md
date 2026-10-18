@@ -50,7 +50,7 @@ scheduled re-sync, hybrid keyword + vector search, re-ranking.
 
 | Gap | Why it matters | Roadmap item |
 |---|---|---|
-| **Hosting** — today it runs on your laptop with a Cloudflare quick tunnel whose URL changes on restart | A client needs 24×7 uptime, a fixed domain, backups, monitoring | P12 |
+| ~~Hosting~~ — **done:** 24×7 on Oracle Cloud Always Free, HTTPS, nightly backups with alerts, invite-only sign-up ([DEPLOYMENT-ARCHITECTURE.md](../DEPLOYMENT-ARCHITECTURE.md)). Still to add per client: a proper domain and, for contracts with uptime promises, failover | A client needs 24×7 uptime, a fixed domain, backups, monitoring | P12 |
 | **WhatsApp per client** — each client needs their own Meta Business verification and a real number (not the test number); messages after 24 h need approved templates | Without it the desk can only talk to 5 test numbers | P8 |
 | **Cost tracking and caps per org** | Protects your margin when a client gets heavy traffic | P9 |
 | **n8n licence** — n8n's Sustainable Use License limits offering it as part of a paid hosted service | Check with n8n, buy a licence, or move channel code into the brain | P13 |
@@ -58,8 +58,8 @@ scheduled re-sync, hybrid keyword + vector search, re-ranking.
 | **Legal** — terms of service, DPA, DPDP Act consent/deletion, GST registration, invoicing | Required to sign any business client | — |
 | **Evals** — a test set of 30–50 real questions per client, run before go-live | Proves answer quality, catches regressions | P9 |
 
-The fastest safe path: one small cloud VM per client (Docker Compose as today) + fixed domain + nightly DB backup. That
-avoids most multi-tenant hosting risk for the first 3–5 clients.
+The fastest safe path: one small cloud VM per client (the same Docker deployment: `./setup.sh server-env` + `deploy`) +
+a client domain + nightly DB backup. That avoids most multi-tenant hosting risk for the first 3–5 clients.
 
 ## 4. Who to sell to first
 
@@ -115,7 +115,10 @@ Check your employment contract regarding side businesses and IP before selling.
 
 ## 7. Using the deck
 
-- File: `docs/sales/SwarmAI-Customer-Deck.pptx`, 13 slides, speaker notes on every slide.
-- Before sending: replace the contact line on the last slide and confirm the prices on slide 12.
+- File: `docs/sales/SwarmAI-Customer-Deck.pptx`, 14 slides, speaker notes on every slide. Slide 9 *Always on, safely
+  hosted* covers the 24×7 deployment (secure entrance, private network, backups and alerts, invite-only, own cloud).
+- Before sending: replace the contact line on the last slide and confirm the prices on slide 13.
+- To change it: edit `docs/sales/deck/build-deck.js`, then `cd docs/sales/deck && npm install && npm run build`
+  (screenshots in `deck/assets/`; set `PPTX_SKILL` to apply the theme colours).
 - Screenshots come from the demo clinic "Acme Dental" used in testing.
 - It only claims features that are built; roadmap packs are labelled as such.

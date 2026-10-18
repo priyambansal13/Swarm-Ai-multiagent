@@ -1,7 +1,7 @@
 import { BadRequestException, ForbiddenException, Injectable, Logger, NotFoundException, OnApplicationBootstrap } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { InjectRepository } from '@nestjs/typeorm';
-import { DataSource, In, IsNull, LessThan, Repository } from 'typeorm';
+import { DataSource, In, IsNull, LessThan, MoreThan, Repository } from 'typeorm';
 import { z } from 'zod';
 import { decrypt, encrypt, shortCode } from '../common/crypto.js';
 import {
@@ -190,8 +190,15 @@ export class OrgService implements OnApplicationBootstrap {
     return { inv, org };
   }
 
-  async useInvite(code: string) {
-    await this.invites.update({ code }, { usedAt: new Date() });
+  /** Marks an invitation used — atomically, so one link can't create two accounts when used twice at once. */
+  async claimInvite(code: string) {
+    const r = await this.invites.update({ code, usedAt: IsNull(), expiresAt: MoreThan(new Date()) }, { usedAt: new Date() });
+    if (!r.affected) throw new BadRequestException('This invitation is invalid or has expired.');
+  }
+
+  /** Gives an invitation back when the account could not be created after all. */
+  async releaseInvite(code: string) {
+    await this.invites.update({ code }, { usedAt: null as unknown as Date });
   }
 
   // ------------------------------------------------------------------ admin views

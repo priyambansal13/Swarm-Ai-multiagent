@@ -26,7 +26,8 @@ they turn SwarmAI from one person's assistant into something you can set up for 
   to one email address. The person opens `…/signup?invite=CODE` and joins with that role.
 - **Invite-only sign-up:** with `SIGNUP_MODE=invite` in `brain/.env` (set automatically for servers by
   `./setup.sh server-env`), accounts can only be created from an invitation — except the very first account, so a
-  fresh install can create its owner. `GET /api/auth/signup-policy` tells the sign-up page which mode is active.
+  fresh install can create its owner. Unknown values fail closed to `invite`. `GET /api/auth/signup-policy` tells the
+  sign-up page which mode is active. Invitation links are claimed atomically, so one link can't create two accounts.
 - **Removing a member** moves them into a fresh personal workspace; their own data (mail, tasks, notes) stays with them.
 - **Per-organisation settings:** name, **assistant name** (shown in the app header and to customers), **accent colour**,
   timezone, main and fast **models**, and an optional **own OpenAI key**. The key is stored encrypted (AES-256-GCM)
@@ -182,5 +183,5 @@ All of it is also in Swagger (`/api/docs`) under *Admin console* and *Customer d
 | `web/src/components/admin/*` | admin console tabs |
 | `web/src/components/InboxView.tsx` | staff inbox |
 
-Tests: 32 unit tests (`cd brain && pnpm test`). New ones cover the chunker, "wants a human" detection, invite-only sign-up, the registry
+Tests: 41 unit tests (`cd brain && pnpm test`). New ones cover the chunker, "wants a human" detection, invite-only sign-up, the registry
 merge, customer-safe tool filtering and approval-wrapped tools.

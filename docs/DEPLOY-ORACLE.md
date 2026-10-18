@@ -123,6 +123,25 @@ Without this step, sign up again on the new address (you become owner of a new o
 | Restore | `gunzip -c ~/swarm-backups/swarm-….sql.gz \| docker exec -i swarm-db psql -U swarm -d swarm` |
 | Change a key | edit `.env` / `brain/.env` → `docker compose up -d` (n8n tokens → also `./setup.sh n8n`) |
 
+## Secrets backup (your Mac)
+The server can be rebuilt from the repo, but not without its secrets: `.env`, `brain/.env` (incl. `APP_SECRET`, which
+decrypts Google tokens and org keys), `web/.env.local` and `.swarm/server/` (database password, n8n encryption key).
+Keep an encrypted copy off the Mac:
+```bash
+cd swarm-ai
+PASS="$(openssl rand -base64 33)"
+security add-generic-password -U -a swarm-ai -s "SwarmAI secrets backup" -w "$PASS"     # passphrase → macOS Keychain
+tar -czf - .env brain/.env web/.env.local .swarm/server/.env .swarm/server/brain.env \
+  | PASS="$PASS" openssl enc -aes-256-cbc -pbkdf2 -iter 600000 -salt -pass env:PASS \
+    -out ~/Library/Mobile\ Documents/com~apple~CloudDocs/SwarmAI-secrets-backup/SwarmAI-secrets-$(date +%F).tar.gz.enc
+```
+Restore (into a fresh clone): get the passphrase from Keychain Access ("SwarmAI secrets backup"), then
+```bash
+PASS='…' openssl enc -d -aes-256-cbc -pbkdf2 -iter 600000 -pass env:PASS -in SwarmAI-secrets-….tar.gz.enc | tar -xzf -
+```
+Also save the passphrase in a password manager — the Keychain item lives only on this Mac. Make a new backup whenever
+a key changes (e.g. after rotating the OpenAI key).
+
 ## Troubleshooting
 | Symptom | Fix |
 |---|---|

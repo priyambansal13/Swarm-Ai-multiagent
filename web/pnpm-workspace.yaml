@@ -1,0 +1,3 @@
+# Install scripts not needed; declared so non-interactive installs (Docker) don't fail.
+allowBuilds:
+  unrs-resolver: false

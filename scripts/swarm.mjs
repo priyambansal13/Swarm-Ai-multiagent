@@ -13,6 +13,8 @@
  *   restart   stop + start
  *   status    show what is running
  *   doctor    check prerequisites, configuration and health
+ *   server-env <domain>   (your computer) write the production server's env files into .swarm/server/
+ *   deploy    (on the server) build + start all containers behind Caddy, import n8n workflows, register webhooks
  *
  * Flags
  *   --yes        non-interactive: keep existing values, read new ones from environment variables
@@ -591,6 +593,63 @@ async function doctor() {
   await status();
 }
 
+// ───────────────────────────────────────────── production server (docs/DEPLOY-ORACLE.md)
+const SERVER_DIR = join(ROOT, '.swarm', 'server');
+const PROD_COMPOSE = 'docker-compose.yml:docker-compose.prod.yml';
+// plain host name: labels of 1–63 letters/digits/hyphens, not starting or ending with a hyphen; no scheme, port or path
+const DOMAIN_RE = /^(?!-)[a-z0-9-]{1,63}(?<!-)(\.(?!-)[a-z0-9-]{1,63}(?<!-))+$/;
+
+/** On your computer: write the server's .env and brain/.env into .swarm/server/ from the local ones, with public URLs
+ *  for `domain` and fresh production secrets. Secrets are kept on later runs (the database password must not change). */
+function serverEnv() {
+  step('S', 'Server configuration');
+  const domain = (args.filter((a) => !a.startsWith('--'))[1] ?? '').trim().toLowerCase();
+  if (!DOMAIN_RE.test(domain)) die('Usage: node scripts/swarm.mjs server-env <domain>   e.g. swarm-ai.duckdns.org');
+  if (!existsSync(P.rootEnv) || !existsSync(P.brainEnv)) die('Run setup first — .env and brain/.env are copied from this computer');
+  mkdirSync(SERVER_DIR, { recursive: true });
+  const rootOut = join(SERVER_DIR, '.env'), brainOut = join(SERVER_DIR, 'brain.env');
+  const prev = readEnv(rootOut);
+  const keep = (k, n = 32) => (isSet(prev[k]) ? prev[k] : secret(n));
+  const s = {
+    POSTGRES_PASSWORD: keep('POSTGRES_PASSWORD', 24), N8N_ENCRYPTION_KEY: keep('N8N_ENCRYPTION_KEY'),
+    SWARM_N8N_TOKEN: keep('SWARM_N8N_TOKEN'), N8N_MCP_TOKEN: keep('N8N_MCP_TOKEN'),
+  };
+  const url = `https://${domain}`;
+  if (!existsSync(rootOut)) writeFileSync(rootOut, readFileSync(P.rootEnv, 'utf8'), { mode: 0o600 });
+  writeEnv(rootOut, { COMPOSE_FILE: PROD_COMPOSE, APP_DOMAIN: domain, N8N_PUBLIC_URL: `${url}/`, SWARM_BRAIN_URL: 'http://brain:4200', ...s });
+  writeFileSync(brainOut, readFileSync(P.brainEnv, 'utf8'), { mode: 0o600 });
+  writeEnv(brainOut, {
+    PUBLIC_API_URL: url, WEB_URL: url, CORS_ORIGIN: url, GOOGLE_REDIRECT_URI: `${url}/api/google/callback`,
+    SWARM_N8N_TOKEN: s.SWARM_N8N_TOKEN, N8N_MCP_TOKEN: s.N8N_MCP_TOKEN, YATRA_API_URL: '', YATRA_WEB_URL: '',
+  });
+  ok(`wrote .swarm/server/.env and .swarm/server/brain.env for ${url} (secrets not shown)`);
+  info('copy them to the server (docs/DEPLOY-ORACLE.md step 4):');
+  console.log(`      scp .swarm/server/.env <user>@<server-ip>:swarm-ai/.env`);
+  console.log(`      scp .swarm/server/brain.env <user>@<server-ip>:swarm-ai/brain/.env`);
+  info(`Google: add ${url}/api/google/callback as an authorised redirect URI of your OAuth client`);
+}
+
+/** On the server: build and start every container (Caddy, web, brain, n8n, Postgres), then import the n8n workflows
+ *  and register the Telegram/WhatsApp webhooks on the public URL. Safe to re-run after `git pull`. */
+async function deploy() {
+  step('D', 'Deploy (production containers)');
+  const env = readEnv(P.rootEnv);
+  if (env.COMPOSE_FILE !== PROD_COMPOSE) die(`.env must contain COMPOSE_FILE=${PROD_COMPOSE} — create it with server-env on your computer`);
+  if (!DOMAIN_RE.test(env.APP_DOMAIN ?? '')) die('.env needs APP_DOMAIN set to a plain host name, e.g. swarm-ai.duckdns.org');
+  if (!existsSync(P.brainEnv)) die('brain/.env is missing — copy .swarm/server/brain.env from your computer');
+  if (sh('docker', ['compose', 'version']).code !== 0) die('Docker with the compose plugin is required (infra/server-bootstrap.sh installs it)');
+  mustRun('build images (first time takes a few minutes)', 'docker', ['compose', 'build'], { inherit: true });
+  mustRun('start containers', 'docker', ['compose', 'up', '-d', '--remove-orphans']);
+  await waitFor('PostgreSQL healthy', async () => sh('docker', ['inspect', '-f', '{{.State.Health.Status}}', 'swarm-db']).out === 'healthy');
+  await waitFor('brain healthy', async () => (await http('http://localhost:4200/api/health')).status === 200, 180_000);
+  await waitFor('web up', async () => (await http('http://localhost:3200')).status === 200, 120_000);
+  await waitFor('n8n up', async () => (await http(`http://localhost:${env.N8N_PORT || 5678}/healthz`)).status === 200, 120_000);
+  await n8n();
+  await waitFor(`https://${env.APP_DOMAIN} reachable (HTTPS certificate)`, async () => (await http(`https://${env.APP_DOMAIN}/api/health`)).status === 200, 180_000);
+  await status();
+  console.log(`\n  ${bold('Live')}  ${cyan(`https://${env.APP_DOMAIN}`)}   · n8n editor: ssh -L 5678:localhost:5678 ${os.userInfo().username}@<server-ip>, then http://localhost:5678`);
+}
+
 function summary() {
   const brain = readEnv(P.brainEnv);
   console.log(`\n${bold(green('SwarmAI is set up.'))}`);
@@ -626,7 +685,9 @@ function summary() {
       case 'restart': stop({ tunnel: false }); await sleep(1500); await start(); await status(); break;
       case 'status': await status(); break;
       case 'doctor': await doctor(); break;
-      default: die(`Unknown command "${command}". Use: setup | configure | n8n | tunnel | start | stop | restart | status | doctor`);
+      case 'server-env': serverEnv(); break;
+      case 'deploy': await deploy(); break;
+      default: die(`Unknown command "${command}". Use: setup | configure | n8n | tunnel | start | stop | restart | status | doctor | server-env | deploy`);
     }
   } finally {
     rl?.close();

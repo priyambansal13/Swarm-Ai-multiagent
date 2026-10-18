@@ -74,6 +74,8 @@ Only the **OpenAI key** is required; press Enter to skip any integration and add
 | `start` · `stop` · `restart` | brain + web (and the tunnel) in the background |
 | `status` | services, integrations and n8n workflows |
 | `doctor` | prerequisites + configuration checks + status |
+| `server-env <domain>` | write a production server's env files into `.swarm/server/` ([DEPLOY-ORACLE.md](docs/DEPLOY-ORACLE.md)) |
+| `deploy` | on the server: build and start all containers behind Caddy (HTTPS), import n8n workflows, register webhooks |
 
 Flags: `--yes` (non-interactive: keep existing values, read new ones from environment variables such as
 `OPENAI_API_KEY`), `--tunnel`, `--no-build`, `--no-start`.

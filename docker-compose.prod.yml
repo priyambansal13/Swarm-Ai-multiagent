@@ -1,0 +1,83 @@
+# Production overlay for one server (Oracle Cloud Always Free, or any VPS). The server's .env sets
+#   COMPOSE_FILE=docker-compose.yml:docker-compose.prod.yml
+# so every `docker compose …` command (and scripts/swarm.mjs) uses both files. See docs/DEPLOY-ORACLE.md.
+#
+# Only Caddy is reachable from the internet (80/443). Postgres, n8n, brain and web listen on 127.0.0.1 only;
+# reach the n8n editor through an SSH tunnel: ssh -L 5678:localhost:5678 ubuntu@<server>
+services:
+  postgres:
+    restart: unless-stopped
+    environment:
+      # production must never fall back to the development password
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?set POSTGRES_PASSWORD in .env}
+    ports: !override
+      - "127.0.0.1:${POSTGRES_PORT:-5434}:5432"
+
+  n8n:
+    restart: unless-stopped
+    ports: !override
+      - "127.0.0.1:${N8N_PORT:-5678}:5678"
+    environment:
+      SWARM_BRAIN_URL: http://brain:4200
+      DB_POSTGRESDB_PASSWORD: ${POSTGRES_PASSWORD:?set POSTGRES_PASSWORD in .env}
+      EXECUTIONS_DATA_PRUNE: "true"
+      EXECUTIONS_DATA_MAX_AGE: "168" # hours; keeps the n8n database small
+
+  brain:
+    build: ./brain
+    image: swarm-brain
+    container_name: swarm-brain
+    restart: unless-stopped
+    depends_on:
+      postgres:
+        condition: service_healthy
+    env_file: ./brain/.env
+    environment:
+      PORT: "4200"
+      DATABASE_URL: postgres://${POSTGRES_USER:-swarm}:${POSTGRES_PASSWORD:?set POSTGRES_PASSWORD in .env}@postgres:5432/swarm
+      N8N_MCP_URL: http://n8n:5678/mcp/swarm-channels
+      TZ: ${TIMEZONE:-Asia/Kolkata}
+    ports:
+      - "127.0.0.1:4200:4200"
+    healthcheck:
+      test: ["CMD", "node", "-e", "fetch('http://localhost:4200/api/health').then(r => process.exit(r.ok ? 0 : 1), () => process.exit(1))"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 60s
+
+  web:
+    build:
+      context: ./web
+      args:
+        NEXT_PUBLIC_API_URL: https://${APP_DOMAIN:?set APP_DOMAIN in .env}
+    image: swarm-web
+    container_name: swarm-web
+    restart: unless-stopped
+    ports:
+      - "127.0.0.1:3200:3200"
+    healthcheck:
+      test: ["CMD", "node", "-e", "fetch('http://localhost:3200/').then(r => process.exit(r.ok ? 0 : 1), () => process.exit(1))"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 60s
+
+  caddy:
+    image: caddy:2
+    container_name: swarm-caddy
+    restart: unless-stopped
+    depends_on: [brain, web, n8n]
+    environment:
+      APP_DOMAIN: ${APP_DOMAIN}
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./infra/Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy_data:/data
+      - caddy_config:/config
+
+volumes:
+  caddy_data:
+  caddy_config:

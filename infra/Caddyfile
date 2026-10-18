@@ -1,0 +1,22 @@
+# One public address for everything; HTTPS certificates are obtained and renewed automatically.
+{$APP_DOMAIN} {
+	# Brain API, AG-UI streaming and Swagger (flush immediately so streamed replies aren't buffered)
+	handle /api/* {
+		reverse_proxy brain:4200 {
+			flush_interval -1
+		}
+	}
+	# n8n production webhooks only (Telegram, WhatsApp). The n8n editor is never exposed.
+	handle /webhook/* {
+		reverse_proxy n8n:5678
+	}
+	# Web app
+	handle {
+		encode zstd gzip
+		reverse_proxy web:3200
+	}
+	header {
+		Strict-Transport-Security "max-age=31536000; includeSubDomains"
+		-Server
+	}
+}

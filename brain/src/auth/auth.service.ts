@@ -1,4 +1,4 @@
-import { BadRequestException, ConflictException, ForbiddenException, Injectable, UnauthorizedException } from '@nestjs/common';
+import { BadRequestException, ConflictException, ForbiddenException, Injectable, Logger, UnauthorizedException } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
@@ -49,8 +49,19 @@ export class AuthService {
     private readonly config: ConfigService,
   ) {}
 
+  private readonly log = new Logger(AuthService.name);
+  private warnedMode?: string;
+
+  /** Unset/empty or `open` → open; `invite` → invite. Any other value (a typo such as `invite-only`) fails closed to
+   *  invite-only, with a warning — a security switch must never fall back to open. */
   get signupMode(): SignupMode {
-    return this.config.get<string>('SIGNUP_MODE')?.trim().toLowerCase() === 'invite' ? 'invite' : 'open';
+    const v = (this.config.get<string>('SIGNUP_MODE') ?? '').trim().toLowerCase();
+    if (v === '' || v === 'open') return 'open';
+    if (v !== 'invite' && this.warnedMode !== v) {
+      this.warnedMode = v;
+      this.log.warn(`SIGNUP_MODE="${v}" is not "open" or "invite" — treating it as "invite"`);
+    }
+    return 'invite';
   }
 
   /** What the sign-up page may offer: `open` = anyone may create an account (and organisation). */
@@ -79,11 +90,18 @@ export class AuthService {
     const invited = input.invite ? await this.orgs.invite(input.invite) : null;
     if (invited?.inv.email && invited.inv.email !== input.email) throw new BadRequestException('This invitation is for a different email address.');
     const org = invited?.org ?? (await this.orgs.createOrg(input.orgName || `${input.name.split(' ')[0]}'s workspace`, timezone));
-    const user = await this.users.save(this.users.create({
-      email: input.email, name: input.name, passwordHash: hashPassword(input.password), timezone, settings: { ...DEFAULT_SETTINGS },
-      orgId: org.id, role: invited?.inv.role ?? 'owner',
-    }));
-    if (invited) await this.orgs.useInvite(invited.inv.code);
+    // Claim the invitation before creating the account, so a link can't be used twice by simultaneous sign-ups.
+    if (invited) await this.orgs.claimInvite(invited.inv.code);
+    let user: User;
+    try {
+      user = await this.users.save(this.users.create({
+        email: input.email, name: input.name, passwordHash: hashPassword(input.password), timezone, settings: { ...DEFAULT_SETTINGS },
+        orgId: org.id, role: invited?.inv.role ?? 'owner',
+      }));
+    } catch (err) {
+      if (invited) await this.orgs.releaseInvite(invited.inv.code);
+      throw err;
+    }
     return { token: signToken({ sub: user.id }, TOKEN_TTL), user: publicUser(user) };
   }
 

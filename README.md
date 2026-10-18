@@ -368,7 +368,7 @@ Key files: `src/components/chat/ChatApp.tsx` (AG-UI `HttpAgent`, interrupts, res
 | `TELEGRAM_BOT_USERNAME`, `WHATSAPP_DISPLAY_NUMBER` | no | — | deep links in Settings |
 | `YATRA_API_URL`, `YATRA_WEB_URL` | no | `http://localhost:4100`, `:3100` | India trip plans |
 | `PORT`, `PUBLIC_API_URL`, `WEB_URL`, `CORS_ORIGIN` | no | 4200, `http://localhost:4200`, `http://localhost:3200`, same | server |
-| `SIGNUP_MODE` | no | `open` | `invite` = new accounts need an invite link (the first account is always allowed); `server-env` sets `invite` for servers |
+| `SIGNUP_MODE` | no | `open` | `invite` = new accounts need an invite link (the first account is always allowed); any other non-empty value is treated as `invite` (fails closed, with a warning); `server-env` sets `invite` for servers |
 | `LANGSMITH_TRACING`, `LANGSMITH_API_KEY`, `LANGSMITH_PROJECT` | no | off | tracing |
 
 ---
@@ -426,7 +426,7 @@ also read rows you add manually via `read_my_sheet`).
 
 ## 14. Testing
 ```bash
-cd brain && pnpm test        # AG-UI contract test (official verifyEvents) + confirmation-guarantee test, sign-up policy (32 tests)
+cd brain && pnpm test        # AG-UI contract test (official verifyEvents) + confirmation-guarantee test, sign-up policy (41 tests)
 ```
 Verified end to end with the real model during development: multi-agent parallel requests, expense/task/reminder
 logging, delete → approval → executed / rejected, India-first weather with IMD alerts, Telegram link + text + voice

@@ -596,7 +596,8 @@ async function doctor() {
 // ───────────────────────────────────────────── production server (docs/DEPLOY-ORACLE.md)
 const SERVER_DIR = join(ROOT, '.swarm', 'server');
 const PROD_COMPOSE = 'docker-compose.yml:docker-compose.prod.yml';
-const DOMAIN_RE = /^[a-z0-9-]+(\.[a-z0-9-]+)+$/; // plain host name: no scheme, port, path or spaces
+// plain host name: labels of 1–63 letters/digits/hyphens, not starting or ending with a hyphen; no scheme, port or path
+const DOMAIN_RE = /^(?!-)[a-z0-9-]{1,63}(?<!-)(\.(?!-)[a-z0-9-]{1,63}(?<!-))+$/;
 
 /** On your computer: write the server's .env and brain/.env into .swarm/server/ from the local ones, with public URLs
  *  for `domain` and fresh production secrets. Secrets are kept on later runs (the database password must not change). */

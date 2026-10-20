@@ -252,6 +252,34 @@ function bullets(items, o = {}) {
     s.addNotes('One message can use several agents at once: “log ₹450 lunch, remind me at 5 to call Ravi, and what’s the weather in Pune tomorrow”. Email and calendar connect per person to their own Google account.');
   }
 
+  // 7b — content studio
+  {
+    const s = pres.addSlide({ masterName: 'Title only', sectionTitle: 'Product' });
+    s.addText('A content studio for creators', { placeholder: 'title' });
+    const steps = [
+      ['FaNewspaper', 'Research in seconds', 'Latest news and web sources, summarised into key facts with links.'],
+      ['FaWandMagicSparkles', 'A script that fits', 'Shorts and Reels scripts timed to 30–90 s, beat by beat.'],
+      ['FaDownload', 'Ready to shoot', 'Caption, hashtags, thumbnails and music; download the script or teleprompter text.'],
+    ];
+    for (let i = 0; i < 3; i++) {
+      const y = 1.3 + i * 0.98;
+      await iconCircle(s, steps[i][0], 0.5, y + 0.04, 0.55, i === 1 ? C.accent1 : C.accent2, `studio-${i}`);
+      text(s, steps[i][1], { x: 1.25, y, w: 3.0, h: 0.32, fontSize: 15, bold: true, objectName: `studio-h-${i}` });
+      text(s, steps[i][2], { x: 1.25, y: y + 0.33, w: 3.0, h: 0.6, fontSize: 12, color: C.accent4, objectName: `studio-b-${i}` });
+    }
+    const chips = [['FaLanguage', 'Hindi, Hinglish & more'], ['FaPlug', 'Works with Claude (MCP)']];
+    for (let i = 0; i < 2; i++) {
+      const x = 0.5 + i * 1.95, y = 4.35;
+      card(s, x, y, 1.85, 0.5, C.accent5, `studio-chip-${i}`);
+      s.addImage({ data: await icon(chips[i][0], '#' + HEX.accent1), x: x + 0.13, y: y + 0.12, w: 0.26, h: 0.26, objectName: `studio-chip-icon-${i}`, altText: '' });
+      text(s, chips[i][1], { x: x + 0.47, y, w: 1.36, h: 0.5, fontSize: 11, bold: true, color: C.text1, valign: 'middle', objectName: `studio-chip-t-${i}` });
+    }
+    const img = await shot('studio-script.png', { left: 192, top: 56, width: 976, height: 640 });
+    const w = 5.05, h = w / img.ratio;
+    s.addImage({ data: img.data, x: 4.45, y: 1.3, w, h, shadow: shadow(), objectName: 'studio-shot', altText: 'Studio tab showing a generated 30-second YouTube Shorts script with timed beats, caption, hashtags and thumbnail ideas' });
+    s.addNotes('Studio (StoryForge) is for anyone who makes short videos — marketing teams, coaches, clinics, creators. Type a topic: it searches the latest news and web sources, summarises them with linked facts and suggests angles, then writes a script timed to the chosen length for Shorts or Reels, in the chosen language and tone. Everything is downloadable. The same research and scripting are available to AI assistants like Claude Desktop through MCP. Search uses free sources; the writing uses OpenAI.');
+  }
+
   // 8 — control
   {
     const s = pres.addSlide({ masterName: 'Title only', sectionTitle: 'Product' });
@@ -399,7 +427,7 @@ function bullets(items, o = {}) {
     s.addText('Simple, predictable pricing', { placeholder: 'title' });
     const plans = [
       ['Starter', '₹4,999', '/month', ['1 channel (WhatsApp or Telegram)', '3 team seats', '500 customer chats / month', '50 documents', 'Email support'], false],
-      ['Growth', '₹12,999', '/month', ['WhatsApp + Telegram + web', '10 team seats', '3,000 customer chats / month', 'Industry pack + custom agents', 'Team assistant for staff'], true],
+      ['Growth', '₹12,999', '/month', ['WhatsApp + Telegram + web', '10 team seats', '3,000 customer chats / month', 'Industry pack + custom agents', 'Team assistant + content studio'], true],
       ['Enterprise', 'Custom', '', ['Unlimited seats and chats', 'Your own cloud or server', 'Your own AI account and keys', 'Custom integrations', 'Priority support'], false],
     ];
     for (let i = 0; i < 3; i++) {

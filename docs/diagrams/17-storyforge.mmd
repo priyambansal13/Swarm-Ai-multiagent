@@ -1,0 +1,37 @@
+flowchart LR
+  subgraph IN["Who uses it"]
+    direction TB
+    U["<b>Member (browser / phone)</b><br/>Studio tab"]
+    A["<b>AI agents</b><br/>Claude Desktop · other MCP clients"]
+  end
+  subgraph BRAIN["SwarmAI brain (NestJS)"]
+    direction TB
+    UI["<b>Studio API</b><br/>POST /api/studio/research<br/>POST /api/studio/script"]
+    MCP["<b>MCP server</b> · /api/mcp<br/>get_latest_info_mcp<br/>get_video_script_mcp<br/>(Bearer MCP_SERVER_TOKEN)"]
+    CORE["<b>StudioService</b><br/>research(topic) → sources · summary · facts · angles<br/>script(topic, research) → titles · hook · timed beats ·<br/>CTA · caption · hashtags · thumbnails · music"]
+    UI --> CORE
+    MCP --> CORE
+  end
+  subgraph SEARCH["Free search"]
+    direction TB
+    T["<b>Tavily</b> free tier<br/>(if TAVILY_API_KEY)"]
+    S["<b>SerpAPI</b> free plan<br/>Google + News"]
+    K["<b>Keyless</b><br/>Wikipedia · Google News RSS<br/>+ top pages read"]
+  end
+  O["<b>OpenAI</b><br/>gpt-4.1-mini (org's own key if set)"]
+  OUT["<b>Downloads</b><br/>script .md · teleprompter .txt<br/>YouTube Shorts · Instagram Reels"]
+
+  U -->|"topic, platform, length, tone, language"| UI
+  A -->|"tool calls"| MCP
+  CORE -->|"search"| T
+  CORE --> S
+  CORE --> K
+  CORE -->|"summarise · write · fit length"| O
+  CORE --> OUT
+
+  classDef who fill:#CCFBF1,stroke:#0D9488,color:#111;
+  classDef api fill:#DBEAFE,stroke:#2563EB,color:#111;
+  classDef core fill:#EDE9FE,stroke:#7C3AED,color:#111;
+  classDef ext fill:#FFEDD5,stroke:#EA580C,color:#111;
+  classDef out fill:#DCFCE7,stroke:#16A34A,color:#111;
+  class U,A who; class UI,MCP api; class CORE core; class T,S,K,O ext; class OUT out;

@@ -115,9 +115,9 @@ Check your employment contract regarding side businesses and IP before selling.
 
 ## 7. Using the deck
 
-- File: `docs/sales/SwarmAI-Customer-Deck.pptx`, 14 slides, speaker notes on every slide. Slide 9 *Always on, safely
-  hosted* covers the 24×7 deployment (secure entrance, private network, backups and alerts, invite-only, own cloud).
-- Before sending: replace the contact line on the last slide and confirm the prices on slide 13.
+- File: `docs/sales/SwarmAI-Customer-Deck.pptx`, 15 slides, speaker notes on every slide. Slide 8 *A content studio for
+  creators* shows Studio (StoryForge); slide 10 *Always on, safely hosted* covers the 24×7 deployment.
+- Before sending: replace the contact line on the last slide and confirm the prices on slide 14.
 - To change it: edit `docs/sales/deck/build-deck.js`, then `cd docs/sales/deck && npm install && npm run build`
   (screenshots in `deck/assets/`; set `PPTX_SKILL` to apply the theme colours).
 - Screenshots come from the demo clinic "Acme Dental" used in testing.

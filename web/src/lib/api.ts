@@ -51,8 +51,12 @@ export async function api<T = unknown>(path: string, init: RequestInit & { json?
     }
     throw new ApiError(res.status, msg);
   }
+  // An endpoint that returns nothing (e.g. `null` from Nest) answers 200 with an empty body — that is `null`, not a file.
+  if (res.status === 204 || res.headers.get('content-length') === '0') return null as T;
   const type = res.headers.get('content-type') ?? '';
-  return (type.includes('json') ? res.json() : res.blob()) as Promise<T>;
+  if (type.includes('json')) return res.json() as Promise<T>;
+  const blob = await res.blob();
+  return (blob.size === 0 ? null : blob) as T;
 }
 
 export const inr = (n: number | null | undefined) => (n == null ? '—' : `₹${Math.round(n).toLocaleString('en-IN')}`);

@@ -104,6 +104,8 @@ Turn these on/off, change the brief time, timezone, notify channel (Telegram / W
 - **Chat** — conversations, live agent activity, approval cards, push-to-talk, stop button
 - **Dashboard** — tasks, upcoming reminders, recent expenses, activity, run automations now
 - **Memory** — notes and remembered facts (delete any item)
+- **Studio** — StoryForge: type a topic → latest research → a timed YouTube Shorts / Instagram Reels script; copy or
+  download it ([STUDIO.md](STUDIO.md))
 - **Inbox** (owner/admin/agent) — customer chats handed over by the bot; reply, take over, hand back, close
 - **Admin** (owner/admin) — overview, organisation & branding, members, agents, knowledge, customer desk, approvals, audit log
 - **Settings** — profile, timezone, notify channel, automations, Connect/Disconnect Google, Link/Unlink Telegram &

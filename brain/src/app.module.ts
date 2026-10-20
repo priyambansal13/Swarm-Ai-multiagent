@@ -36,6 +36,9 @@ import { YatraService } from './integrations/yatra.service.js';
 import { RecordsController } from './records/records.controller.js';
 import { RecordsService } from './records/records.service.js';
 import { VoiceController } from './voice/voice.controller.js';
+import { McpController } from './studio/mcp.controller.js';
+import { StudioController } from './studio/studio.controller.js';
+import { StudioService } from './studio/studio.service.js';
 
 @Module({
   imports: [
@@ -53,10 +56,10 @@ import { VoiceController } from './voice/voice.controller.js';
   ],
   controllers: [
     AuthController, GoogleController, ChatController, AguiController, RecordsController, VoiceController,
-    ChannelsController, AutomationsController, HealthController, AdminController, DeskController,
+    ChannelsController, AutomationsController, HealthController, AdminController, DeskController, StudioController, McpController,
   ],
   providers: [
-    OrgService, AuthService, AuthGuard, N8nGuard, KnowledgeService, AgentRegistryService, DeskService,
+    OrgService, AuthService, AuthGuard, N8nGuard, KnowledgeService, AgentRegistryService, DeskService, StudioService,
     GoogleAuthService, GmailService, CalendarService, SheetsService,
     OpenAIMediaService, SearchService, WebReaderService, WeatherService, ImdWarningsService, YatraService, N8nChannelsService,
     RecordsService, ActionExecutor, SwarmGraphService, ChatService, ChannelsService, AutomationsService,

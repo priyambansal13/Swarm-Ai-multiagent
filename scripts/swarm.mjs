@@ -613,6 +613,7 @@ function serverEnv() {
   const s = {
     POSTGRES_PASSWORD: keep('POSTGRES_PASSWORD', 24), N8N_ENCRYPTION_KEY: keep('N8N_ENCRYPTION_KEY'),
     SWARM_N8N_TOKEN: keep('SWARM_N8N_TOKEN'), N8N_MCP_TOKEN: keep('N8N_MCP_TOKEN'),
+    MCP_SERVER_TOKEN: keep('MCP_SERVER_TOKEN'), // StoryForge MCP server (/api/mcp) for Claude Desktop & other agents
   };
   const url = `https://${domain}`;
   if (!existsSync(rootOut)) writeFileSync(rootOut, readFileSync(P.rootEnv, 'utf8'), { mode: 0o600 });
@@ -622,6 +623,7 @@ function serverEnv() {
     PUBLIC_API_URL: url, WEB_URL: url, CORS_ORIGIN: url, GOOGLE_REDIRECT_URI: `${url}/api/google/callback`,
     SWARM_N8N_TOKEN: s.SWARM_N8N_TOKEN, N8N_MCP_TOKEN: s.N8N_MCP_TOKEN, YATRA_API_URL: '', YATRA_WEB_URL: '',
     SIGNUP_MODE: 'invite', // public server: invite links only (the first account is always allowed)
+    MCP_SERVER_TOKEN: s.MCP_SERVER_TOKEN,
   });
   ok(`wrote .swarm/server/.env and .swarm/server/brain.env for ${url} (secrets not shown)`);
   info('copy them to the server (docs/DEPLOY-ORACLE.md step 4):');

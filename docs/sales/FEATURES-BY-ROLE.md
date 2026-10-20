@@ -75,6 +75,15 @@ tells their assistant (their mail, tasks, notes) is never visible to anyone else
 One message can use several agents at once: *"log ₹450 lunch, remind me at 5 to call Ravi, and what's the weather in
 Pune tomorrow"*. Web chat supports push-to-talk and read-aloud.
 
+### D2. Studio — content creation (every login)
+| Feature | What it does |
+|---|---|
+| Real-time research | Type a topic; get the latest sources, a summary, key facts with links and video angles in seconds |
+| Short-video scripts | YouTube Shorts / Instagram Reels scripts timed to 30–90 s: titles, hook, beats with voice-over, on-screen text and visuals, CTA, caption, hashtags, thumbnail ideas, music |
+| Any language and tone | English, Hindi, Hinglish and more; energetic, informative, storytelling, funny, inspirational |
+| Download | Full script (.md) or teleprompter text (.txt) |
+| For AI agents | The same research and scripting as MCP tools for Claude Desktop and similar |
+
 ### E. Automations — work done without being asked
 | Automation | When | What you get |
 |---|---|---|

@@ -562,3 +562,14 @@ reached through an SSH tunnel.
 
 Full picture — request paths, release pipeline, operations, data and secrets, failure scenarios:
 **[DEPLOYMENT-ARCHITECTURE.md](DEPLOYMENT-ARCHITECTURE.md)**. Step by step: [DEPLOY-ORACLE.md](DEPLOY-ORACLE.md).
+
+---
+
+## 13. Studio (StoryForge)
+
+A self-contained pipeline in `brain/src/studio/`: free search (Tavily free tier → SerpAPI free plan → keyless Wikipedia
++ Google News, plus the top pages read) → OpenAI structured outputs for the research summary and the timed short-video
+script (with a length-correction pass). Served to the web app at `/api/studio/*` and to AI agents through an MCP server
+at `/api/mcp` (`@modelcontextprotocol/server`, stateless Streamable HTTP, bearer token). Details: [STUDIO.md](STUDIO.md).
+
+![StoryForge](diagrams/17-storyforge.png)

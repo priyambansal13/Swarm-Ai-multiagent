@@ -1,6 +1,6 @@
 'use client';
 
-import { Brain, Headset, LayoutDashboard, LogOut, MessageSquare, Settings, ShieldCheck } from 'lucide-react';
+import { Brain, Clapperboard, Headset, LayoutDashboard, LogOut, MessageSquare, Settings, ShieldCheck } from 'lucide-react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useEffect, useState } from 'react';
@@ -13,6 +13,7 @@ const BASE_NAV = [
   { href: '/', label: 'Chat', icon: MessageSquare },
   { href: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },
   { href: '/memory', label: 'Memory', icon: Brain },
+  { href: '/studio', label: 'Studio', icon: Clapperboard },
 ];
 const INBOX = { href: '/inbox', label: 'Inbox', icon: Headset };
 const ADMIN = { href: '/admin', label: 'Admin', icon: ShieldCheck };

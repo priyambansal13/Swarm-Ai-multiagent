@@ -104,3 +104,19 @@ export interface DeskConversation {
 }
 export interface DeskMessage { id: string; role: 'customer' | 'bot' | 'staff' | 'system'; authorName: string | null; text: string; createdAt: string }
 export interface DeskConversationDetail extends DeskConversation { messages: DeskMessage[] }
+
+// ------------------------------------------------------------------ Studio (StoryForge)
+export type StudioPlatform = 'shorts' | 'reels' | 'both';
+export interface StudioSource { title: string; url: string; snippet: string; date?: string | null }
+export interface StudioResearch {
+  topic: string; summary: string; keyFacts: { fact: string; source: number }[]; angles: string[]; freshness: string;
+  sources: StudioSource[]; provider: string; createdAt: string;
+}
+export interface StudioBeat { time: string; voiceover: string; onScreenText: string; visual: string }
+export interface StudioScript {
+  topic: string; platform: StudioPlatform; durationSec: number; tone: string; language: string; wordCount: number; createdAt: string;
+  titles: string[]; hook: string; beats: StudioBeat[]; cta: string; caption: string; hashtags: string[]; thumbnailIdeas: string[];
+  musicMood: string; sources: StudioSource[];
+}
+export interface StudioScriptResponse { script: StudioScript; markdown: string; teleprompter: string }
+export interface StudioOptions { platforms: StudioPlatform[]; durations: number[]; tones: string[]; searchProvider: string }

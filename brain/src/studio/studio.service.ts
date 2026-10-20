@@ -157,17 +157,20 @@ export class StudioService {
   async sources(topic: string): Promise<{ provider: string; sources: Source[] }> {
     const tavily = this.config.get<string>('TAVILY_API_KEY');
     if (tavily) {
-      try {
-        const d = await fetchJson('https://api.tavily.com/search', {
-          method: 'POST', timeoutMs: 25_000, ttlMs: 15 * 60_000,
-          headers: { Authorization: `Bearer ${tavily}`, 'Content-Type': 'application/json' },
-          body: JSON.stringify({ query: topic, search_depth: 'basic', max_results: 8, include_answer: false }),
-        });
-        const sources = ((d as any).results ?? []).map((r: any) => ({ title: r.title, url: r.url, snippet: String(r.content ?? '').slice(0, 600), date: r.published_date ?? null }));
-        if (sources.length) return { provider: 'Tavily (free tier)', sources };
-      } catch (e) {
-        this.log.warn(`Tavily failed, falling back: ${(e as Error).message}`);
-      }
+      // Two Tavily calls (2 free credits): news from the last 30 days (dated) first, then the general web for background.
+      const call = (extra: Record<string, unknown>) => fetchJson('https://api.tavily.com/search', {
+        method: 'POST', timeoutMs: 25_000, ttlMs: 15 * 60_000,
+        headers: { Authorization: `Bearer ${tavily}`, 'Content-Type': 'application/json' },
+        body: JSON.stringify({ query: topic, search_depth: 'basic', max_results: 6, include_answer: false, ...extra }),
+      }).then((d) => ((d as any).results ?? []).map((r: any): Source => ({ title: r.title, url: r.url, snippet: String(r.content ?? '').slice(0, 600), date: r.published_date ?? null })));
+      const [news, web] = await Promise.all([
+        call({ topic: 'news', days: 30 }).catch((e) => { this.log.warn(`Tavily news failed: ${(e as Error).message}`); return [] as Source[]; }),
+        call({ topic: 'general' }).catch((e) => { this.log.warn(`Tavily search failed: ${(e as Error).message}`); return [] as Source[]; }),
+      ]);
+      const seen = new Set<string>();
+      const sources = [...news, ...web].filter((x) => x.url && !seen.has(x.url) && seen.add(x.url)).slice(0, 10);
+      if (sources.length) return { provider: news.length ? 'Tavily news + web (free tier)' : 'Tavily web (free tier)', sources };
+      this.log.warn('Tavily returned nothing, falling back');
     }
     const [news, web] = await Promise.all([
       this.search.news(topic, 6).catch(() => ({ results: [] as Source[] })),

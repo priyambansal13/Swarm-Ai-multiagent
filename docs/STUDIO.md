@@ -22,7 +22,7 @@ funny · inspirational), language (English, Hindi, Hinglish, Tamil, Telugu, Mara
 ## Free sources only
 | Order | Source | Needs |
 |---|---|---|
-| 1 | **Tavily** (free tier, 1,000 searches/month) | `TAVILY_API_KEY` in `brain/.env` (optional) |
+| 1 | **Tavily** (free tier, 1,000 credits/month): news from the last 30 days + web, in parallel — 2 credits per research (~500 researches/month) | `TAVILY_API_KEY` in `brain/.env` (optional) |
 | 2 | **SerpAPI** Google + Google News (free plan, 250 searches/month) | `SERPAPI_KEY` (already used by the Research agent) |
 | 3 | **Wikipedia + Google News RSS** | nothing (keyless fallback) |
 | + | Top 3 pages read for detail | nothing |

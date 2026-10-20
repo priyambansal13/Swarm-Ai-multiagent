@@ -72,3 +72,29 @@ describe('spoken word count', () => {
     expect(spokenWords({ hook: 'one two', beats: [{ voiceover: 'three four five' }], cta: 'six' })).toBe(6);
   });
 });
+
+describe('StoryForge sources with Tavily', () => {
+  it('puts dated news first, then web results, without duplicates', async () => {
+    const realFetch = globalThis.fetch;
+    const bodies: any[] = [];
+    globalThis.fetch = vi.fn(async (_url: unknown, init?: RequestInit) => {
+      const body = JSON.parse(String(init?.body));
+      bodies.push(body);
+      const results = body.topic === 'news'
+        ? [{ title: 'News A', url: 'https://n/a', content: 'x', published_date: '2026-10-19' }]
+        : [{ title: 'Web B', url: 'https://w/b', content: 'y' }, { title: 'News A dup', url: 'https://n/a', content: 'x' }];
+      return new Response(JSON.stringify({ results }), { status: 200, headers: { 'content-type': 'application/json' } });
+    }) as unknown as typeof fetch;
+    try {
+      const config = { get: vi.fn((k: string) => (k === 'TAVILY_API_KEY' ? 'tvly-test-key-for-unit-test' : undefined)) } as unknown as ConfigService;
+      const studio = new StudioService(config, {} as SearchService, {} as WebReaderService);
+      const r = await studio.sources('unique topic for tavily unit test');
+      expect(r.provider).toBe('Tavily news + web (free tier)');
+      expect(r.sources.map((x) => x.url)).toEqual(['https://n/a', 'https://w/b']);
+      expect(r.sources[0].date).toBe('2026-10-19');
+      expect(bodies.map((b) => b.topic).sort()).toEqual(['general', 'news']);
+    } finally {
+      globalThis.fetch = realFetch;
+    }
+  });
+});

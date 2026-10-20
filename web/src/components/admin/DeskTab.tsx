@@ -22,7 +22,7 @@ function Simulator() {
     const t = setInterval(load, 4000);
     return () => clearInterval(t);
   }, [load]);
-  const n = conv?.messages.length ?? 0;
+  const n = conv?.messages?.length ?? 0;
   useEffect(() => {
     bottom.current?.scrollIntoView({ block: 'end' });
   }, [n]);
@@ -61,7 +61,7 @@ function Simulator() {
           {conv && conv.status !== 'bot' && <Link href={`/inbox?c=${conv.id}`} className="ml-auto font-medium text-teal underline">Open in Inbox →</Link>}
         </div>
         <div className="scroll-thin min-h-0 flex-1 space-y-2 overflow-y-auto p-3">
-          {conv?.messages.map((m) =>
+          {conv?.messages?.map((m) =>
             m.role === 'system' ? (
               <p key={m.id} className="text-center text-[11px] text-muted">— {m.text} —</p>
             ) : (
